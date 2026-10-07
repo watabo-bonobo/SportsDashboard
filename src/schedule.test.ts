@@ -115,3 +115,15 @@ describe('japanOutcome / buildSummary', () => {
     expect(s).toEqual({ today: 2, week: 2, freeTv: 1, record: { win: 1, draw: 0, loss: 0 } });
   });
 });
+
+describe('鹿島の絞り込み', () => {
+  it('鹿島の試合だけを選び、鹿島側から見た勝敗を数える', async () => {
+    const { isKashimaEvent, sideOutcome, KASHIMA } = await import('./schedule');
+    const win = ev({ sport: 'soccer', home: 'FC東京', away: '鹿島アントラーズ', result: { home: 0, away: 2 } });
+    expect(isKashimaEvent(win)).toBe(true);
+    expect(isKashimaEvent(ev({ sport: 'soccer', home: '浦和', away: '柏' }))).toBe(false);
+    expect(isKashimaEvent(ev({ sport: 'basketball', home: '鹿島X', away: 'Y' }))).toBe(false);
+    expect(sideOutcome(win, KASHIMA)).toBe('win');
+    expect(sideOutcome(win)).toBeNull();
+  });
+});

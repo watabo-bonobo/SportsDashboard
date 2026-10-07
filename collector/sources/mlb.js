@@ -93,10 +93,19 @@ export function parseSchedule(schedule, byTeam) {
   return events;
 }
 
+// 試合と順位表の両方で使うので、1回の収集で選手一覧は1度だけ取る
+let japaneseCache;
+async function loadJapanese(season, fetchText) {
+  if (japaneseCache?.season !== season) {
+    const players = fetchText(`${API}/sports/1/players?season=${season}`).then((t) => japaneseByTeam(JSON.parse(t).people ?? []));
+    japaneseCache = { season, players };
+  }
+  return japaneseCache.players;
+}
+
 export async function collect(now, fetchText) {
   const season = now.getUTCFullYear();
-  const players = JSON.parse(await fetchText(`${API}/sports/1/players?season=${season}`)).people ?? [];
-  const byTeam = japaneseByTeam(players);
+  const byTeam = await loadJapanese(season, fetchText);
   if (!byTeam.size) return [];
   // 直近3日の結果と、7日先までの予定
   const params = new URLSearchParams({
@@ -107,4 +116,41 @@ export async function collect(now, fetchText) {
     hydrate: 'linescore,venue',
   });
   return parseSchedule(JSON.parse(await fetchText(`${API}/schedule?${params}`)), byTeam);
+}
+
+const DIVISION = {
+  201: 'ア・リーグ東地区', 202: 'ア・リーグ中地区', 200: 'ア・リーグ西地区',
+  204: 'ナ・リーグ東地区', 205: 'ナ・リーグ中地区', 203: 'ナ・リーグ西地区',
+};
+
+/** 日本人選手のいるチームの地区だけ、順位表にする */
+export function parseStandings(data, byTeam) {
+  const out = [];
+  for (const rec of data.records ?? []) {
+    const teams = rec.teamRecords ?? [];
+    if (!teams.some((t) => byTeam.has(t.team.id))) continue;
+    out.push({
+      id: `mlb-${rec.division.id}`,
+      sport: 'baseball',
+      title: `MLB ${DIVISION[rec.division.id] ?? rec.division.id}`,
+      source: 'https://www.mlb.com/standings',
+      rows: teams.map((t) => ({
+        rank: Number(t.divisionRank),
+        team: TEAM_JA[t.team.id] ?? t.team.name,
+        played: t.gamesPlayed,
+        win: t.leagueRecord.wins,
+        loss: t.leagueRecord.losses,
+        gb: t.divisionGamesBack ?? t.gamesBack,
+        ...(byTeam.has(t.team.id) ? { note: byTeam.get(t.team.id).join('、') } : {}),
+      })),
+    });
+  }
+  return out;
+}
+
+export async function standings(now, fetchText) {
+  const season = now.getUTCFullYear();
+  const byTeam = await loadJapanese(season, fetchText);
+  const data = JSON.parse(await fetchText(`${API}/standings?leagueId=103,104&season=${season}&standingsTypes=regularSeason`));
+  return parseStandings(data, byTeam);
 }

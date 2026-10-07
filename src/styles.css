@@ -24,6 +24,8 @@
   --volleyball-tint: #fff0e5;
   --basketball: #7a5100;
   --basketball-tint: #fff6db;
+  --handball: #6a2c91;
+  --handball-tint: #f4ebfa;
   --tabletennis: #146a3e;
   --tabletennis-tint: #e6f5ec;
 
@@ -58,6 +60,8 @@
     --volleyball-tint: #3d2414;
     --basketball: #f5cb5c;
     --basketball-tint: #3a2f12;
+    --handball: #d6a8f5;
+    --handball-tint: #2e1a3b;
     --tabletennis: #6fd3a0;
     --tabletennis-tint: #143323;
 
@@ -354,6 +358,10 @@ h1 {
 .sport-basketball {
   --c: var(--basketball);
   --c-tint: var(--basketball-tint);
+}
+.sport-handball {
+  --c: var(--handball);
+  --c-tint: var(--handball-tint);
 }
 .sport-tabletennis {
   --c: var(--tabletennis);
@@ -693,4 +701,103 @@ h1 {
     text-decoration: none;
     font-size: 14px;
   }
+}
+
+/* ---- 右パネルのタブ（最近の結果 / 順位表）---- */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.panel-title.tabs {
+  justify-content: flex-start;
+  gap: 0;
+  padding: 0 8px;
+}
+.tabs button {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: var(--text-sub);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.tabs button[aria-selected='true'] {
+  color: var(--text);
+  font-weight: 700;
+  border-bottom-color: var(--primary);
+}
+.tabs button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: -3px;
+}
+.panel-note {
+  font-size: 12px;
+  color: var(--text-sub);
+  padding-top: 8px;
+}
+
+/* ---- 順位表 ---- */
+.standings {
+  padding: 12px 0 8px;
+  border-bottom: 1px solid var(--line);
+}
+.standings-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  margin-bottom: 8px;
+}
+.standings-title a {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-sub);
+}
+.standings table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.standings th,
+.standings td {
+  padding: 4px 4px;
+  text-align: right;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.standings thead th {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-sub);
+  border-bottom-color: var(--line-strong);
+}
+.standings .team-col {
+  text-align: left;
+  font-weight: 500;
+  white-space: normal;
+  width: 100%;
+}
+.standings .pts-col {
+  font-weight: 700;
+}
+.standings tr.is-featured {
+  background: var(--featured);
+}
+.row-note {
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-sub);
 }

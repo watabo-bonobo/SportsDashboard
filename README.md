@@ -50,7 +50,7 @@ GitHub Actions（`.github/workflows/deploy.yml`）が **1時間ごと** に各�
 ```jsonc
 {
   "id": "samurai-20261114",            // 一意なID
-  "sport": "soccer",                    // soccer | baseball | volleyball | basketball | tabletennis
+  "sport": "soccer",                    // soccer | baseball | volleyball | basketball | handball | tabletennis
   "competition": "KALLANG FOOTBALL SERIES SINGAPORE",
   "round": "第9節",                     // 任意
   "home": "日本", "away": "ブラジル",    // 対戦形式の場合

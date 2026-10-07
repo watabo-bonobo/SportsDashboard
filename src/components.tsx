@@ -1,4 +1,4 @@
-import type { Broadcast, SportEvent } from './types';
+import type { Broadcast, Sport, SportEvent, Standings } from './types';
 import {
   eventTitle,
   formatDate,
@@ -15,8 +15,8 @@ import type { Outcome, Summary } from './schedule';
 const KIND_LABEL: Record<Broadcast['kind'], string> = { tv: '地上波', bs: 'BS/CS', net: '配信' };
 const OUTCOME_LABEL: Record<Outcome, string> = { win: '勝', draw: '分', loss: '敗' };
 
-export function SportTag({ event }: { event: SportEvent }) {
-  return <span className={`tag sport-${event.sport}`}>{SPORT_LABEL[event.sport]}</span>;
+export function SportTag({ sport }: { sport: Sport }) {
+  return <span className={`tag sport-${sport}`}>{SPORT_LABEL[sport]}</span>;
 }
 
 function Broadcasts({ items }: { items?: Broadcast[] }) {
@@ -93,7 +93,7 @@ export function EventRow({ event }: { event: SportEvent }) {
       <p className="when">{event.end ? formatPeriod(event) : formatTime(event)}</p>
       <div className="body">
         <p className="meta">
-          <SportTag event={event} />
+          <SportTag sport={event.sport} />
           <span>
             {event.competition}
             {event.round && ` ${event.round}`}
@@ -118,7 +118,7 @@ export function ResultRow({ event, now }: { event: SportEvent; now: Date }) {
   return (
     <article className={`result${event.featured ? ' is-featured' : ''}`}>
       <p className="meta">
-        <SportTag event={event} />
+        <SportTag sport={event.sport} />
         <span>
           {formatDate(endKey)}（{relativeDay(endKey, now)}）
         </span>
@@ -156,7 +156,7 @@ export function FeaturedCard({ event, now }: { event: SportEvent; now: Date }) {
   return (
     <article className={`card sport-${event.sport}`}>
       <p className="meta">
-        <SportTag event={event} />
+        <SportTag sport={event.sport} />
         <span className="countdown">{relativeDay(date, now)}</span>
       </p>
       <h3 className="card-match">{eventTitle(event)}</h3>
@@ -177,5 +177,67 @@ export function FeaturedCard({ event, now }: { event: SportEvent; now: Date }) {
       )}
       <Broadcasts items={event.broadcasts} />
     </article>
+  );
+}
+
+export function StandingsTable({ table }: { table: Standings }) {
+  const soccer = table.rows.some((r) => r.points !== undefined);
+  return (
+    <section className="standings" aria-label={`${table.title} 順位表`}>
+      <h3 className="standings-title">
+        <SportTag sport={table.sport} />
+        <span>{table.title}</span>
+        {table.source && (
+          <a className="push-right" href={table.source} target="_blank" rel="noreferrer">
+            出典
+          </a>
+        )}
+      </h3>
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">順位</th>
+            <th scope="col" className="team-col">
+              チーム
+            </th>
+            <th scope="col">試合</th>
+            <th scope="col">勝</th>
+            {soccer && <th scope="col">分</th>}
+            <th scope="col">敗</th>
+            {soccer ? (
+              <>
+                <th scope="col">差</th>
+                <th scope="col">勝点</th>
+              </>
+            ) : (
+              <th scope="col">差</th>
+            )}
+          </tr>
+        </thead>
+        <tbody>
+          {table.rows.map((r) => (
+            <tr key={r.team} className={r.note ? 'is-featured' : undefined}>
+              <td>{r.rank}</td>
+              <th scope="row" className="team-col">
+                {r.team}
+                {r.note && <span className="row-note">{r.note}</span>}
+              </th>
+              <td>{r.played ?? '―'}</td>
+              <td>{r.win}</td>
+              {soccer && <td>{r.draw ?? 0}</td>}
+              <td>{r.loss}</td>
+              {soccer ? (
+                <>
+                  <td>{r.diff !== undefined && r.diff > 0 ? `+${r.diff}` : (r.diff ?? '―')}</td>
+                  <td className="pts-col">{r.points}</td>
+                </>
+              ) : (
+                <td>{r.gb ?? '―'}</td>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
   );
 }

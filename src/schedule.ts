@@ -9,6 +9,7 @@ export const SPORT_LABEL: Record<Sport, string> = {
   baseball: '野球',
   volleyball: 'バレー',
   basketball: 'バスケ',
+  handball: 'ハンド',
   tabletennis: '卓球',
 };
 
@@ -17,6 +18,7 @@ export const SPORT_ICON: Record<Sport, string> = {
   baseball: '⚾',
   volleyball: '🏐',
   basketball: '🏀',
+  handball: '🤾',
   tabletennis: '🏓',
 };
 

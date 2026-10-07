@@ -2,51 +2,32 @@ name: probe-sources
 on:
   push:
     branches: [claude/sports-dashboard-tuyjrs]
-    paths: ['.github/workflows/probe.yml']
+    paths: ['.github/workflows/probe.yml', 'collector/**']
 jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: fetch
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: collect
         run: |
-          mkdir out
-          cat > clean.py <<'PY'
-          import sys, re
-          html = open(sys.argv[1], encoding='utf-8', errors='replace').read()
-          h = re.sub(r'<(script|style|svg|noscript|head)[^>]*>.*?</\1>', '', html, flags=re.S)
-          h = re.sub(r'<!--.*?-->', '', h, flags=re.S)
-          h = re.sub(r'<(img|link|meta|source|br)[^>]*>', '', h)
-          h = re.sub(r'\s(style|role|aria-[a-z]+|data-[a-z-]+|srcSet|srcset|src|loading|width|height|decoding|target|rel|tabindex)="[^"]*"', '', h)
-          h = re.sub(r'a-typography[\w -]*?(?=m-schedule|")', '', h)
-          h = re.sub(r'\s+', ' ', h)
-          open(sys.argv[1] + '.c', 'w').write(h)
-          PY
-          get() { curl -sL -A "Mozilla/5.0 (compatible; SportsDashboard)" -o "out/$1" -w "=== $1 %{http_code} %{size_download} %{url_effective}\n" --max-time 30 "$2"; python3 clean.py "out/$1"; }
-          show() { python3 -c "
-          import sys; h=open('out/$1.c').read(); kw='$2'; i=h.find(kw); print('kw',kw,h.count(kw),i); print(h[max(0,i-$3):i+$4] if i>=0 else '')"; }
-          get jl https://www.jleague.jp/match/
-          python3 - <<'PY'
-          import re
-          h = open('out/jl.c').read()
-          ids = re.findall(r'class="m-schedule ([^"]*)" id="(\d+)"', h)
-          print('schedules', len(ids)); print(sorted(set(c for cl,_ in ids for c in cl.split() if c.startswith('m-schedule--'))))
-          print([i for _, i in ids][:60])
-          print(sorted(set(re.findall(r'class="(m-schedule__[\w-]+)', h))))
-          print('status texts', sorted(set(re.findall(r'm-schedule__status">([^<]*)<', h))))
-          print('day heads', re.findall(r'<h\d[^>]*>([^<]{0,30}\d+月\d+日[^<]{0,20})</h\d>', h)[:20])
-          m = [x.start() for x in re.finditer(r'm-schedule__score', h)]
-          print('score idx', m[:3])
-          if m: print(h[m[0]-1500:m[0]+1500])
-          PY
-          get jl2 "https://www.jleague.jp/match/search/?category[]=j1&year=2026&month=10&section=8"
-          grep -o 'id="2026[0-9]*"' out/jl2.c | head -30 | tr '\n' ' '; echo
-          get jl3 "https://www.jleague.jp/match/section/j1/8/"
-          grep -o 'id="2026[0-9]*"' out/jl3.c | head -30 | tr '\n' ' '; echo
-          get tt https://www.tv-tokyo.co.jp/tabletennis/tournament/
-          show tt 'チャイナスマッシュ' 1500 3500
-          get tt2 https://www.tv-tokyo.co.jp/tabletennis/tournament/china_smash_2026/broadcast/
-          show tt2 '放送' 300 3000
-          get bk https://fibaworldcup2027-asianqualifiers.japanbasketball.jp/
-          show bk 'カタール' 1500 2500
-          get vb https://www.jva.or.jp/national_team/2026/men_schedule/
-          show vb 'アジア' 800 2500
+          node collector/collect.js "" public/data/events.json /tmp/out.json
+          node -e '
+          const d = require("/tmp/out.json");
+          for (const e of d.events) console.log([e.id, e.start, e.end ?? "", e.home ?? e.title, e.away ?? "", e.result ? e.result.home+"-"+e.result.away+" "+(e.result.note??"") : "", e.venue ?? "", (e.broadcasts??[]).map(b=>b.kind+":"+b.name).join(" ")].join(" | "))'
+      - name: probe basketball / volleyball
+        continue-on-error: true
+        run: |
+          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Safari/537.36"
+          for u in https://www.japanbasketball.jp/japan/schedule https://www.japanbasketball.jp/japan/men/schedule https://fibaworldcup2027-asianqualifiers.japanbasketball.jp/schedule/ https://www.jva.or.jp/national_team/2026/men_schedule/ https://www.jva.or.jp/national_team/2026/women_schedule/; do
+            curl -sL -A "$UA" --max-time 20 -o /tmp/p.html -w "=== %{http_code} %{size_download} %{url_effective}\n" "$u" || echo "=== fail $u"
+            python3 -c "
+          import re; h=open('/tmp/p.html',encoding='utf-8',errors='replace').read()
+          h=re.sub(r'<(script|style|svg|head|noscript)[^>]*>.*?</\1>','',h,flags=re.S); h=re.sub(r'<(img|link|meta|br|source)[^>]*>','',h); h=re.sub(r'\s(style|data-[a-z-]+|src|srcset|width|height|alt)=\"[^\"]*\"','',h); h=re.sub(r'\s+',' ',h)
+          i=max(h.find('2026'),0); j=h.find('月', h.find('<main') if '<main' in h else 0)
+          print(h[j-200:j+1800] if j>0 else h[:1500])"
+          done

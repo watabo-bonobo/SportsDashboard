@@ -1,0 +1,54 @@
+name: probe-sources
+on:
+  push:
+    branches: [claude/sports-dashboard-tuyjrs]
+    paths: ['.github/workflows/probe.yml']
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: fetch
+        run: |
+          mkdir out
+          cat > clean.py <<'PY'
+          import sys, re
+          html = open(sys.argv[1], encoding='utf-8', errors='replace').read()
+          h = re.sub(r'<(script|style|svg|noscript|head)[^>]*>.*?</\1>', '', html, flags=re.S)
+          h = re.sub(r'<!--.*?-->', '', h, flags=re.S)
+          h = re.sub(r'<(img|link|meta|source|br)[^>]*>', '', h)
+          h = re.sub(r'\s(style|role|aria-[a-z]+|data-[a-z-]+|srcset|src|loading|width|height|target|rel)="[^"]*"', '', h)
+          h = re.sub(r'\s+', ' ', h)
+          open(sys.argv[1] + '.c', 'w').write(h)
+          PY
+          get() { curl -sL -A "Mozilla/5.0 (compatible; SportsDashboard/1.0; +https://github.com/watabo-bonobo/SportsDashboard)" -o "out/$1" -w "=== $1 %{http_code} %{size_download} %{url_effective}\n" --max-time 30 "$2"; python3 clean.py "out/$1"; }
+          show() { python3 -c "
+          h=open('out/$1.c').read(); kw='$2'; i=h.find(kw); print('kw',kw,h.count(kw),i); print(h[max(0,i-$3):i+$4] if i>=0 else h[:$4])"; }
+          get npb https://npb.jp/games/2026/
+          show npb '10月' 500 2500
+          get npbd https://npb.jp/games/2026/schedule_10_detail.html
+          show npbd '10/' 1500 4000
+          get npbd9 https://npb.jp/games/2026/schedule_09_detail.html
+          show npbd9 '9/30' 1500 3000
+          get cs https://npb.jp/cs/2026/
+          show cs '日程' 500 3000
+          get js https://npb.jp/nippons/2026/
+          show js '日程' 500 3000
+          get yh https://baseball.yahoo.co.jp/npb/schedule/
+          show yh '中継' 1500 3000
+          get mlbp "https://statsapi.mlb.com/api/v1/sports/1/players?season=2026"
+          python3 -c "
+          import json; d=json.load(open('out/mlbp'))
+          jp=[p for p in d['people'] if p.get('birthCountry')=='Japan']
+          for p in jp: print(p['id'], p['fullName'], p.get('currentTeam',{}).get('id'), p.get('active'))"
+          get mlbs "https://statsapi.mlb.com/api/v1/schedule?sportId=1&startDate=2026-10-01&endDate=2026-10-20&hydrate=broadcasts(all),team,linescore,venue"
+          python3 -c "
+          import json; d=json.load(open('out/mlbs'))
+          for day in d['dates']:
+            for g in day['games']:
+              print(g['gamePk'], g['gameDate'], g['gameType'], g.get('seriesDescription'), g.get('seriesGameNumber'), g['status']['detailedState'], g['teams']['away']['team']['id'], g['teams']['away']['team']['name'], g['teams']['away'].get('score'), '@', g['teams']['home']['team']['id'], g['teams']['home']['team']['name'], g['teams']['home'].get('score'), g['venue']['name'], [b.get('name') for b in g.get('broadcasts',[])][:4])"
+          get mlbt "https://statsapi.mlb.com/api/v1/teams?sportId=1"
+          python3 -c "
+          import json; d=json.load(open('out/mlbt'))
+          print(sorted((t['id'], t['name']) for t in d['teams']))"
+          get mlbjp https://www.mlb.jp/
+          show mlbjp '中継' 500 2000

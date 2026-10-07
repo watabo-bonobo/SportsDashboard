@@ -6,6 +6,7 @@ const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
 
 export const SPORT_LABEL: Record<Sport, string> = {
   soccer: 'サッカー',
+  baseball: '野球',
   volleyball: 'バレー',
   basketball: 'バスケ',
   tabletennis: '卓球',
@@ -13,6 +14,7 @@ export const SPORT_LABEL: Record<Sport, string> = {
 
 export const SPORT_ICON: Record<Sport, string> = {
   soccer: '⚽',
+  baseball: '⚾',
   volleyball: '🏐',
   basketball: '🏀',
   tabletennis: '🏓',

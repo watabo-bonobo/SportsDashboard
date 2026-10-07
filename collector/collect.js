@@ -28,6 +28,17 @@ export async function collect(now = new Date()) {
   const collected = [];
   const report = [];
   for (const src of SOURCES) {
+    // 複数のページを組み合わせる取得元は collect() を持つ
+    if (src.collect) {
+      try {
+        const events = await src.collect(now, fetchText);
+        collected.push(...events);
+        report.push(`✓ ${src.name}: ${events.length}件`);
+      } catch (e) {
+        report.push(`✗ ${src.name}: ${e.message}`);
+      }
+      continue;
+    }
     for (const url of src.urls(now)) {
       try {
         const events = src.parse(await fetchText(url), url, now);

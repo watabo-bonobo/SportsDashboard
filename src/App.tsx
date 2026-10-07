@@ -4,7 +4,7 @@ import { buildBoard, buildSummary, formatClock, formatDate, jstDateKey, relative
 import { validateEventData } from './validate';
 import { EventRow, FeaturedCard, ResultRow, SummaryBar } from './components';
 
-const SPORTS: Sport[] = ['soccer', 'volleyball', 'basketball', 'tabletennis'];
+const SPORTS: Sport[] = ['soccer', 'baseball', 'volleyball', 'basketball', 'tabletennis'];
 const PREFS_KEY = 'sports-dashboard:prefs';
 
 type SportFilter = Sport | 'all';
@@ -106,7 +106,7 @@ export default function App() {
       <header className="header">
         <div className="title">
           <h1>スポーツ観戦ダッシュボード</h1>
-          <p className="lead">日本代表・Jリーグ・バレー・バスケ・卓球の予定、放送・配信、結果をまとめて確認できます。</p>
+          <p className="lead">日本代表・Jリーグ・プロ野球・メジャー・バレー・バスケ・卓球の予定、放送・配信、結果をまとめて確認できます。</p>
         </div>
         <div className="freshness">
           <p>
@@ -221,7 +221,7 @@ export default function App() {
 
       <footer className="footer">
         <p>
-          情報元：JFA、Ｊリーグ公式、日本バレーボール協会、テレ東卓球NEWS ほか報道・公式発表。1時間ごとに自動で集めています。
+          情報元：JFA、Ｊリーグ公式、NPB、MLB、日本バレーボール協会、テレ東卓球NEWS ほか報道・公式発表。1時間ごとに自動で集めています。
         </p>
         <p>放送・配信予定は変更されることがあります。最新の情報は各公式サイトでご確認ください。</p>
       </footer>

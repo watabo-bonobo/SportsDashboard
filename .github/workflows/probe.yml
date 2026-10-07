@@ -2,44 +2,16 @@ name: probe-sources
 on:
   push:
     branches: [claude/sports-dashboard-tuyjrs]
-    paths: ['.github/workflows/probe.yml']
+    paths: ['.github/workflows/probe.yml', 'collector/**']
 jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: fetch
-        run: |
-          mkdir out
-          cat > clean.py <<'PY'
-          import sys, re
-          html = open(sys.argv[1], encoding='utf-8', errors='replace').read()
-          h = re.sub(r'<(script|style|svg|noscript|head)[^>]*>.*?</\1>', '', html, flags=re.S)
-          h = re.sub(r'<!--.*?-->', '', h, flags=re.S)
-          h = re.sub(r'<(img|link|meta|source|br)[^>]*>', '', h)
-          h = re.sub(r'\s(style|role|aria-[a-z]+|data-[a-z-]+|srcset|src|loading|width|height|target|rel)="[^"]*"', '', h)
-          h = re.sub(r'\s+', ' ', h)
-          open(sys.argv[1] + '.c', 'w').write(h)
-          PY
-          get() { curl -sL -A "Mozilla/5.0 (compatible; SportsDashboard/1.0; +https://github.com/watabo-bonobo/SportsDashboard)" -o "out/$1" -w "=== $1 %{http_code} %{size_download} %{url_effective}\n" --max-time 30 "$2"; python3 clean.py "out/$1"; }
-          show() { python3 -c "
-          h=open('out/$1.c').read(); kw='$2'; i=h.find(kw); print('kw',kw,h.count(kw),i); print(h[max(0,i-$3):i+$4] if i>=0 else h[:$4])"; }
-          get npbd https://npb.jp/games/2026/schedule_10_detail.html
-          python3 - <<'PY'
-          import re
-          h=open('out/npbd.c').read()
-          i=h.find('<table'); print(h[i:i+6000])
-          print('ROWS', len(re.findall(r'<tr id="date', h)))
-          print(sorted(set(re.findall(r'class="([\w ]+)"', h[i:]))))
-          print(re.findall(r'href="(/[a-z]+/2026/[^"]*)"', open('out/npbd').read())[:80])
-          PY
-          get top https://npb.jp/
-          grep -o 'href="[^"]*\(cs\|climax\|nippons\|postseason\)[^"]*"' out/top | sort -u | head -20
-          get js https://npb.jp/nippons/2026/
-          python3 -c "
-          h=open('out/js.c').read(); i=h.find('<div class=\"contents'); print(h[i:i+5000])"
-          get js2 https://npb.jp/nippons/2026/schedule.html
-          python3 -c "
-          h=open('out/js2.c').read(); i=h.find('<div class=\"contents'); print(h[i:i+5000])"
-          get cs https://npb.jp/climaxseries/2026/
-          python3 -c "
-          h=open('out/cs.c').read(); i=h.find('<div class=\"contents'); print(h[i:i+5000])"
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node collector/collect.js "" public/data/events.json out.json
+      - run: node -e "const d=require('./out.json'); for (const e of d.events.filter(e=>e.sport==='baseball')) console.log(JSON.stringify(e))"

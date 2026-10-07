@@ -1,6 +1,6 @@
 import type { EventData } from './types';
 
-const SPORTS = ['soccer', 'volleyball', 'basketball', 'tabletennis'];
+const SPORTS = ['soccer', 'baseball', 'volleyball', 'basketball', 'tabletennis'];
 const KINDS = ['tv', 'bs', 'net'];
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const DATETIME_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?(Z|[+-]\d{2}:\d{2})$/;

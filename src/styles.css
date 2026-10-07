@@ -18,6 +18,8 @@
 
   --soccer: #0031d8;
   --soccer-tint: #e8f1fe;
+  --baseball: #a3004f;
+  --baseball-tint: #fdeaf2;
   --volleyball: #a63b00;
   --volleyball-tint: #fff0e5;
   --basketball: #7a5100;
@@ -50,6 +52,8 @@
 
     --soccer: #8fb0ff;
     --soccer-tint: #1b2a52;
+    --baseball: #ff9cc8;
+    --baseball-tint: #3d1628;
     --volleyball: #ffae7a;
     --volleyball-tint: #3d2414;
     --basketball: #f5cb5c;
@@ -339,6 +343,10 @@ h1 {
   --c: var(--soccer);
   --c-tint: var(--soccer-tint);
 }
+.sport-baseball {
+  --c: var(--baseball);
+  --c-tint: var(--baseball-tint);
+}
 .sport-volleyball {
   --c: var(--volleyball);
   --c-tint: var(--volleyball-tint);
@@ -474,6 +482,11 @@ h1 {
 .venue {
   font-size: 13px;
   color: var(--text-sub);
+}
+.note {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
 }
 .side {
   display: flex;

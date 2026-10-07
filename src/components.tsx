@@ -101,6 +101,7 @@ export function EventRow({ event }: { event: SportEvent }) {
         </p>
         <h4 className="match">{eventTitle(event)}</h4>
         {event.venue && <p className="venue">{event.venue}</p>}
+        {event.note && <p className="note">{event.note}</p>}
       </div>
       <div className="side">
         <Broadcasts items={event.broadcasts} />
@@ -135,6 +136,7 @@ export function ResultRow({ event, now }: { event: SportEvent; now: Date }) {
       ) : (
         <h4 className="match">{eventTitle(event)}</h4>
       )}
+      {event.note && <p className="note">{event.note}</p>}
       <div className="result-foot">
         {outcome && <span className={`outcome outcome-${outcome}`}>日本 {OUTCOME_LABEL[outcome]}</span>}
         {r?.note && <span>{r.note}</span>}
@@ -166,6 +168,11 @@ export function FeaturedCard({ event, now }: { event: SportEvent; now: Date }) {
       {event.venue && (
         <p className="card-sub" title={event.venue}>
           {event.venue}
+        </p>
+      )}
+      {event.note && (
+        <p className="card-sub note" title={event.note}>
+          {event.note}
         </p>
       )}
       <Broadcasts items={event.broadcasts} />

@@ -1,4 +1,4 @@
-export type Sport = 'soccer' | 'volleyball' | 'basketball' | 'tabletennis';
+export type Sport = 'soccer' | 'baseball' | 'volleyball' | 'basketball' | 'tabletennis';
 
 /** tv: 地上波 / bs: BS・CS / net: ネット配信 */
 export type BroadcastKind = 'tv' | 'bs' | 'net';
@@ -38,6 +38,8 @@ export interface SportEvent {
   /** 複数日にわたる大会の最終日（日付のみ） */
   end?: string;
   venue?: string;
+  /** 補足（MLB の試合に出る日本人選手など） */
+  note?: string;
   broadcasts?: Broadcast[];
   result?: Result;
   /** 日本代表の試合など、強調表示したいもの */

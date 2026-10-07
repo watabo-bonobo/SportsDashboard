@@ -149,3 +149,95 @@ describe('JVA', () => {
     expect(e.venue).toBe('東京体育館 / 大阪城ホール');
   });
 });
+
+describe('NPB', () => {
+  it('月別日程から試合と結果を取り込む', async () => {
+    const npb = await import('./sources/npb.js');
+    const html = `<table><tbody>
+      <tr id="date1001"><th rowspan="2">10/1（木）</th><td><div class="team1">阪神</div><a href="/scores/2026/1001/t-g-25/"><div class="score1">2</div><div class="state">-</div><div class="score2">2</div></a><div class="team2">巨人</div></td>
+        <td><div class="place">甲子園</div><div class="time">18:00</div></td><td><div class="comment"></div></td></tr>
+      <tr id="date1001"><td><div class="team1">楽天</div><a href="/scores/2026/1001/e-h-24/"><div class="score1">2</div><div class="score2">8</div></a><div class="team2">ソフトバンク</div></td>
+        <td><div class="place">楽天モバイル</div><div class="time">18:00</div></td></tr>
+      <tr id="date1002"><td><div class="team1">ヤクルト</div><a href="/scores/2026/1002/s-l-24/"><div class="cancel">中止</div></a><div class="team2">西武</div></td></tr>
+      <tr id="date1008"><td><div class="team1">ヤクルト</div><a href="/scores/2026/1008/s-g-26/"></a><div class="team2">巨人</div></td>
+        <td><div class="place">神 宮</div><div class="time">18:00</div></td></tr>
+    </tbody></table>`;
+    const events = npb.parse(html, 'https://npb.jp/games/2026/schedule_10_detail.html');
+    expect(events.map((e) => [e.id, e.round, e.start, e.venue, e.result])).toEqual([
+      ['npb-20261001-t-g-25', 'セ・リーグ', '2026-10-01T18:00:00+09:00', '甲子園', { home: 2, away: 2 }],
+      ['npb-20261001-e-h-24', 'パ・リーグ', '2026-10-01T18:00:00+09:00', '楽天モバイル', { home: 2, away: 8 }],
+      ['npb-20261008-s-g-26', 'セ・リーグ', '2026-10-08T18:00:00+09:00', '神宮', undefined],
+    ]);
+  });
+
+  it('シーズン中は今月と来月を見る', async () => {
+    const npb = await import('./sources/npb.js');
+    expect(npb.urls(new Date('2026-10-07T03:00:00Z'))).toEqual([
+      'https://npb.jp/games/2026/schedule_10_detail.html',
+      'https://npb.jp/games/2026/schedule_11_detail.html',
+    ]);
+    expect(npb.urls(new Date('2026-12-07T03:00:00Z'))).toEqual([]);
+  });
+});
+
+describe('MLB', () => {
+  const players = [
+    { id: 660271, fullName: 'Shohei Ohtani', birthCountry: 'Japan', active: true, currentTeam: { id: 119 } },
+    { id: 808967, fullName: 'Yoshinobu Yamamoto', birthCountry: 'Japan', active: true, currentTeam: { id: 119 } },
+    { id: 1, fullName: 'New Player', birthCountry: 'Japan', active: true, currentTeam: { id: 135 } },
+    { id: 2, fullName: 'Someone', birthCountry: 'USA', active: true, currentTeam: { id: 144 } },
+  ];
+  const game = (pk, extra) => ({
+    gamePk: pk,
+    gameDate: '2026-10-07T22:00:00Z',
+    officialDate: '2026-10-07',
+    gameType: 'D',
+    seriesGameNumber: 4,
+    status: { abstractGameState: 'Preview', detailedState: 'Scheduled' },
+    teams: { home: { team: { id: 144 } }, away: { team: { id: 119 } } },
+    venue: { name: 'Truist Park' },
+    ...extra,
+  });
+
+  it('日本人選手の所属チームの試合を日本時間で取り込む', async () => {
+    const mlb = await import('./sources/mlb.js');
+    const byTeam = mlb.japaneseByTeam(players);
+    expect([...byTeam]).toEqual([
+      [119, ['大谷翔平', '山本由伸']],
+      [135, ['New Player']],
+    ]);
+    const schedule = {
+      dates: [
+        {
+          games: [
+            game(1),
+            game(2, {
+              gameType: 'R',
+              status: { abstractGameState: 'Final', detailedState: 'Final' },
+              teams: { home: { team: { id: 135 }, score: 4 }, away: { team: { id: 158 }, score: 3 } },
+              linescore: { currentInning: 11 },
+            }),
+            game(3, { teams: { home: { team: { id: 5517 } }, away: { team: { id: 5525 } } } }), // 対戦相手未定
+            game(4, { teams: { home: { team: { id: 147 } }, away: { team: { id: 139 } } } }), // 日本人選手なし
+            game(5, { status: { startTimeTBD: true, detailedState: 'Scheduled' } }),
+          ],
+        },
+      ],
+    };
+    const events = mlb.parseSchedule(schedule, byTeam);
+    expect(events.map((e) => [e.id, e.round, e.home, e.away, e.start, e.note, e.featured, e.result])).toEqual([
+      ['mlb-1', '地区シリーズ 第4戦', 'ブレーブス', 'ドジャース', '2026-10-08T07:00:00+09:00', '日本人選手：大谷翔平、山本由伸', true, undefined],
+      ['mlb-2', 'レギュラーシーズン', 'パドレス', 'ブルワーズ', '2026-10-08T07:00:00+09:00', '日本人選手：New Player', undefined, { home: 4, away: 3, note: '延長11回' }],
+      ['mlb-5', '地区シリーズ 第4戦', 'ブレーブス', 'ドジャース', '2026-10-08', '日本人選手：大谷翔平、山本由伸', true, undefined],
+    ]);
+  });
+});
+
+describe('ダブルヘッダー', () => {
+  it('同じ日の同じ対戦でも、今回の収集で別の試合ならまとめない', async () => {
+    const { mergeEvents } = await import('./merge.js');
+    const g = (id, start) => ({ id, sport: 'baseball', competition: 'MLB', home: 'A', away: 'B', start });
+    const out = mergeEvents([], [g('mlb-1', '2026-07-01T02:00:00+09:00'), g('mlb-2', '2026-07-01T08:00:00+09:00')]);
+    expect(out.map((e) => e.id)).toEqual(['mlb-1', 'mlb-2']);
+  });
+});

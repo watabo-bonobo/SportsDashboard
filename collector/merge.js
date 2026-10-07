@@ -34,16 +34,19 @@ export function naturalKey(e) {
 export function mergeEvents(base, collected) {
   const byId = new Map(base.map((e) => [e.id, e]));
   const idByKey = new Map(base.map((e) => [naturalKey(e), e.id]));
+  const seen = new Set();
   for (const e of collected) {
     const sameId = idByKey.get(naturalKey(e));
     let prev = byId.get(e.id);
-    if (!prev && sameId) {
+    // 今回の収集で取ったもの同士（ダブルヘッダーなど）はまとめない
+    if (!prev && sameId && !seen.has(sameId)) {
       // 別の id で登録済みの同じ試合 → 新しい id に付け替える
       prev = byId.get(sameId);
       byId.delete(sameId);
     }
     const merged = mergeEvent(prev, e);
     byId.set(e.id, merged);
+    seen.add(e.id);
     idByKey.set(naturalKey(merged), e.id);
   }
   return [...byId.values()].sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : 0));

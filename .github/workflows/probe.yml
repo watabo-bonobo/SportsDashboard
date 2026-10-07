@@ -1,0 +1,43 @@
+name: probe-sources
+on:
+  push:
+    branches: [claude/sports-dashboard-tuyjrs]
+    paths: ['.github/workflows/probe.yml']
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: fetch
+        shell: bash
+        run: |
+          set +e
+          mkdir out
+          cat > clean.py <<'PY'
+          import sys, re
+          html = open(sys.argv[1], encoding='utf-8', errors='replace').read()
+          h = re.sub(r'<(script|style|svg|noscript|head)[^>]*>.*?</\1>', '', html, flags=re.S)
+          h = re.sub(r'<!--.*?-->', '', h, flags=re.S)
+          h = re.sub(r'<(img|link|meta|source|br)[^>]*>', '', h)
+          h = re.sub(r'\s(style|role|aria-[a-z]+|data-[a-z-]+|srcset|src|loading|width|height|target|rel|onclick)="[^"]*"', '', h)
+          h = re.sub(r'\s+', ' ', h)
+          open(sys.argv[1] + '.c', 'w').write(h)
+          PY
+          get() { curl -sL -A "Mozilla/5.0 (compatible; SportsDashboard/1.0; +https://github.com/watabo-bonobo/SportsDashboard)" -o "out/$1" -w "=== $1 %{http_code} %{size_download} %{url_effective}\n" --max-time 30 "$2"; python3 clean.py "out/$1"; }
+          show() { python3 -c "
+          h=open('out/$1.c').read(); kw='$2'; i=h.find(kw); print('kw',kw,h.count(kw),i); print(h[max(0,i-$3):i+$4] if i>=0 else h[:$4])"; }
+          links() { grep -o "href=\"[^\"]*\"" "out/$1" | sort -u | grep -i "$2" | head -60 | tr '\n' ' '; echo; }
+          get j1s https://www.jleague.jp/standings/j1/
+          show j1s '鹿島' 3000 3000
+          get npbc https://npb.jp/bis/2026/stats/std_c.html
+          show npbc '阪神' 1500 3000
+          get mlbst "https://statsapi.mlb.com/api/v1/standings?leagueId=103,104&season=2026&standingsTypes=regularSeason"
+          head -c 1500 out/mlbst; echo
+          get jha https://www.handball.jp/
+          links jha 'national\|japan\|schedule\|game\|match\|日程'
+          get lh https://leagueh.jp/
+          links lh 'schedule\|game\|match\|standing\|rank'
+          get jhl https://www.japan-handball-league.jp/
+          links jhl 'schedule\|game\|match'
+          get jha2 https://www.handball.jp/national_team/
+          links jha2 'schedule\|game\|match\|men\|women'
+          exit 0

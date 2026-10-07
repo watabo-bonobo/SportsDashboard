@@ -55,19 +55,21 @@ export async function collect(now = new Date()) {
 
 /** 順位表を集める。取れなかった表は前回のものを残す */
 export async function collectStandings(now, previous = [], fetch = fetchText) {
-  const tables = new Map(previous.map((t) => [t.id, t]));
+  // 取れなかった取得元の表だけ前回分を残す。外した取得元の表は持ち越さない
+  const tables = [];
   const report = [];
   for (const src of SOURCES) {
     if (!src.standings) continue;
     try {
       const got = await src.standings(now, fetch);
-      for (const t of got) tables.set(t.id, t);
+      tables.push(...got.map((t) => ({ ...t, from: src.name })));
       report.push(`✓ ${src.name}（順位表）: ${got.length}表`);
     } catch (e) {
+      tables.push(...previous.filter((t) => t.from === src.name));
       report.push(`✗ ${src.name}（順位表）: ${e.message}`);
     }
   }
-  return { standings: [...tables.values()], report };
+  return { standings: tables, report };
 }
 
 async function main() {

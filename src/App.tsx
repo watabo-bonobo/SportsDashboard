@@ -47,6 +47,8 @@ export default function App() {
   const [now, setNow] = useState(currentTime);
 
   const [rightTab, setRightTab] = useState<'results' | 'standings'>('results');
+  // スマホでは1画面に収めるため、3つのパネルを切り替えて1つずつ表示する
+  const [mobileView, setMobileView] = useState<'next' | 'upcoming' | 'results'>('upcoming');
   const [loading, setLoading] = useState(false);
   const [fetchedAt, setFetchedAt] = useState<Date | null>(null);
 
@@ -126,7 +128,13 @@ export default function App() {
             <span className={loading ? 'spin' : undefined} aria-hidden="true">
               ↻
             </span>
-            {loading ? '更新中…' : '最新に更新'}
+            {loading ? (
+              '更新中…'
+            ) : (
+              <span>
+                <span className="refresh-long">最新に</span>更新
+              </span>
+            )}
           </button>
           <p className="fetched" aria-live="polite">
             {fetchedAt && !loading ? `${formatClock(fetchedAt)} に読み込みました` : ''}
@@ -163,12 +171,21 @@ export default function App() {
       {board && summary && (
         <>
           <SummaryBar summary={summary} />
-          <nav className="jump" aria-label="ページ内の移動">
-            <a href="#h-upcoming">これからの予定へ</a>
-            <a href="#h-results">結果・順位表へ</a>
+          <nav className="views" aria-label="表示する一覧">
+            {(
+              [
+                ['next', '注目'],
+                ['upcoming', '予定'],
+                ['results', '結果・順位'],
+              ] as const
+            ).map(([key, label]) => (
+              <button key={key} type="button" aria-pressed={mobileView === key} onClick={() => setMobileView(key)}>
+                {label}
+              </button>
+            ))}
           </nav>
 
-          <main className="grid">
+          <main className={`grid show-${mobileView}`}>
             <section className="panel area-next" aria-labelledby="h-next">
               <h2 id="h-next" className="panel-title">
                 次の注目試合・大会<span className="count">競技ごと</span>

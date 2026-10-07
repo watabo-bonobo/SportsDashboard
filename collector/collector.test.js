@@ -267,42 +267,17 @@ describe('順位表', () => {
     ]);
   });
 
-  it('MLB は日本人選手のいる地区だけを順位表にする', async () => {
-    const mlb = await import('./sources/mlb.js');
-    const rec = (id, teams) => ({
-      division: { id },
-      teamRecords: teams.map(([tid, rank, w, l, gb]) => ({
-        team: { id: tid },
-        divisionRank: String(rank),
-        gamesPlayed: w + l,
-        leagueRecord: { wins: w, losses: l },
-        divisionGamesBack: gb,
-      })),
-    });
-    const data = { records: [rec(203, [[119, 1, 95, 67, '-'], [135, 2, 90, 72, '5.0']]), rec(201, [[147, 1, 94, 68, '-']])] };
-    const byTeam = new Map([[119, ['大谷翔平']]]);
-    expect(mlb.parseStandings(data, byTeam)).toEqual([
-      {
-        id: 'mlb-203',
-        sport: 'baseball',
-        title: 'MLB ナ・リーグ西地区',
-        source: 'https://www.mlb.com/standings',
-        rows: [
-          { rank: 1, team: 'ドジャース', played: 162, win: 95, loss: 67, gb: '-', note: '大谷翔平' },
-          { rank: 2, team: 'パドレス', played: 162, win: 90, loss: 72, gb: '5.0' },
-        ],
-      },
-    ]);
-  });
-
   it('取れなかった表は前回のものを残す', async () => {
     const { collectStandings } = await import('./collect.js');
-    const prev = [{ id: 'old-table', sport: 'soccer', title: '前回', rows: [] }];
+    const prev = [
+      { id: 'old-table', sport: 'soccer', title: '前回', rows: [], from: 'Ｊリーグ公式' },
+      { id: 'mlb-203', sport: 'baseball', title: '外した取得元', rows: [], from: 'MLB（日本人選手の所属チーム）' },
+    ];
     const failing = async () => {
       throw new Error('offline');
     };
     const { standings, report } = await collectStandings(NOW, prev, failing);
-    expect(standings).toEqual(prev);
+    expect(standings).toEqual([prev[0]]);
     expect(report.every((r) => r.startsWith('✗'))).toBe(true);
   });
 });

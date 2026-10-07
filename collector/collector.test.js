@@ -138,4 +138,14 @@ describe('JVA', () => {
       ['2026バレーボール男子日本代表 国際親善試合（沖縄大会）', '2026-07-10', undefined],
     ]);
   });
+
+  it('大会名と会場の改行を整える', async () => {
+    const jva = await import('./sources/jva.js');
+    const html = `<dl class="m-scheduleTreeColumn"><dt>9/5</dt><dd class="m-scheduleTreeColumn-name">国際
+        親善試合</dd><dd class="m-scheduleTreeColumn-place">東京体育館
+        大阪城ホール</dd></dl>`;
+    const [e] = jva.parse(html, 'https://www.jva.or.jp/national_team/2026/women_schedule/');
+    expect(e.title).toBe('国際親善試合（女子）');
+    expect(e.venue).toBe('東京体育館 / 大阪城ホール');
+  });
 });

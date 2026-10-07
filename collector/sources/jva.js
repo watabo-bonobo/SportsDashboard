@@ -28,8 +28,15 @@ export function parse(html, url) {
   const events = [];
   $('dl.m-scheduleTreeColumn').each((_, el) => {
     const dl = $(el);
-    const name = dl.find('.m-scheduleTreeColumn-name').text().replace(/＊\d+/g, '').trim();
-    const place = dl.find('.m-scheduleTreeColumn-place').text().replace(/＊\d+/g, '').trim();
+    const name = dl.find('.m-scheduleTreeColumn-name').text().replace(/＊\d+/g, '').replace(/\s*\n\s*/g, '').trim();
+    const place = dl
+      .find('.m-scheduleTreeColumn-place')
+      .text()
+      .replace(/＊\d+/g, '')
+      .split(/\s*\n\s*/)
+      .filter(Boolean)
+      .join(' / ')
+      .trim();
     const range = parseJvaRange(dl.find('dt').first().text(), year);
     if (!name || !range || SKIP.test(name)) return;
     const ev = {

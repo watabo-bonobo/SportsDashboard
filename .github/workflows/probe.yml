@@ -10,37 +10,43 @@ jobs:
       - name: fetch
         run: |
           mkdir out
-          cat > probe.py <<'PY'
+          cat > clean.py <<'PY'
           import sys, re
           html = open(sys.argv[1], encoding='utf-8', errors='replace').read()
-          kw, n = sys.argv[2], int(sys.argv[3])
-          print('next_data' , '__NEXT_DATA__' in html, 'next_f', html.count('self.__next_f'), 'ld+json', html.count('ld+json'))
-          h = re.sub(r'<(script|style|svg|noscript)[^>]*>.*?</\1>', '', html, flags=re.S)
-          h = re.sub(r'<(img|link|meta)[^>]*>', '', h)
-          h = re.sub(r'\s(style|role|aria-[a-z]+|data-[a-z-]+|srcSet|src|loading|width|height|decoding|target|rel)="[^"]*"', '', h)
+          h = re.sub(r'<(script|style|svg|noscript|head)[^>]*>.*?</\1>', '', html, flags=re.S)
+          h = re.sub(r'<!--.*?-->', '', h, flags=re.S)
+          h = re.sub(r'<(img|link|meta|source|br)[^>]*>', '', h)
+          h = re.sub(r'\s(style|role|aria-[a-z]+|data-[a-z-]+|srcSet|srcset|src|loading|width|height|decoding|target|rel|tabindex)="[^"]*"', '', h)
+          h = re.sub(r'a-typography[\w -]*?(?=m-schedule|")', '', h)
           h = re.sub(r'\s+', ' ', h)
-          i = h.find(kw)
-          print('kw', kw, h.count(kw), i)
-          if i >= 0: print(h[max(0, i - n // 3): i + n])
+          open(sys.argv[1] + '.c', 'w').write(h)
           PY
-          i=0
-          while read -r kw n url; do
-            i=$((i+1))
-            code=$(curl -sL -A "Mozilla/5.0 (compatible; SportsDashboard)" -o out/$i.html -w "%{http_code}" --max-time 30 "$url")
-            echo "=== $i $code $(wc -c < out/$i.html) $url"
-            python3 probe.py out/$i.html "$kw" "$n"
-          done <<'URLS'
-          ニュージーランド 3500 https://www.jfa.jp/samuraiblue/schedule_result/2026.html
-          ガンバ大阪 4000 https://www.jleague.jp/match/search/?category%5B%5D=j1&year=2026&month=10
-          準々決勝 2500 https://www.jfa.jp/match/emperorscup_2026/schedule_result/
-          チャイナスマッシュ 2500 https://www.tv-tokyo.co.jp/tabletennis/
-          URLS
-          echo "=== jleague json chunk"
+          get() { curl -sL -A "Mozilla/5.0 (compatible; SportsDashboard)" -o "out/$1" -w "=== $1 %{http_code} %{size_download} %{url_effective}\n" --max-time 30 "$2"; python3 clean.py "out/$1"; }
+          show() { python3 -c "
+          import sys; h=open('out/$1.c').read(); kw='$2'; i=h.find(kw); print('kw',kw,h.count(kw),i); print(h[max(0,i-$3):i+$4] if i>=0 else '')"; }
+          get jl https://www.jleague.jp/match/
           python3 - <<'PY'
           import re
-          html = open('out/2.html', encoding='utf-8').read()
-          for m in re.finditer(r'self\.__next_f\.push\(\[1,"(.*?)"\]\)', html, re.S):
-              s = m.group(1)
-              if 'ガンバ大阪' in s and ('DAZN' in s or 'dazn' in s):
-                  i = s.find('ガンバ大阪'); print(s[max(0,i-1500):i+2500]); break
+          h = open('out/jl.c').read()
+          ids = re.findall(r'class="m-schedule ([^"]*)" id="(\d+)"', h)
+          print('schedules', len(ids)); print(sorted(set(c for cl,_ in ids for c in cl.split() if c.startswith('m-schedule--'))))
+          print([i for _, i in ids][:60])
+          print(sorted(set(re.findall(r'class="(m-schedule__[\w-]+)', h))))
+          print('status texts', sorted(set(re.findall(r'm-schedule__status">([^<]*)<', h))))
+          print('day heads', re.findall(r'<h\d[^>]*>([^<]{0,30}\d+月\d+日[^<]{0,20})</h\d>', h)[:20])
+          m = [x.start() for x in re.finditer(r'm-schedule__score', h)]
+          print('score idx', m[:3])
+          if m: print(h[m[0]-1500:m[0]+1500])
           PY
+          get jl2 "https://www.jleague.jp/match/search/?category[]=j1&year=2026&month=10&section=8"
+          grep -o 'id="2026[0-9]*"' out/jl2.c | head -30 | tr '\n' ' '; echo
+          get jl3 "https://www.jleague.jp/match/section/j1/8/"
+          grep -o 'id="2026[0-9]*"' out/jl3.c | head -30 | tr '\n' ' '; echo
+          get tt https://www.tv-tokyo.co.jp/tabletennis/tournament/
+          show tt 'チャイナスマッシュ' 1500 3500
+          get tt2 https://www.tv-tokyo.co.jp/tabletennis/tournament/china_smash_2026/broadcast/
+          show tt2 '放送' 300 3000
+          get bk https://fibaworldcup2027-asianqualifiers.japanbasketball.jp/
+          show bk 'カタール' 1500 2500
+          get vb https://www.jva.or.jp/national_team/2026/men_schedule/
+          show vb 'アジア' 800 2500

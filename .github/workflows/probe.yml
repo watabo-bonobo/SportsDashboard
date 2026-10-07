@@ -2,42 +2,25 @@ name: probe-sources
 on:
   push:
     branches: [claude/sports-dashboard-tuyjrs]
-    paths: ['.github/workflows/probe.yml']
+    paths: ['.github/workflows/probe.yml', 'collector/**']
 jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
-      - name: fetch
-        shell: bash
-        run: |
-          set +e
-          mkdir out
-          cat > clean.py <<'PY'
-          import sys, re
-          html = open(sys.argv[1], encoding='utf-8', errors='replace').read()
-          h = re.sub(r'<(script|style|svg|noscript|head)[^>]*>.*?</\1>', '', html, flags=re.S)
-          h = re.sub(r'<!--.*?-->', '', h, flags=re.S)
-          h = re.sub(r'<(img|link|meta|source|br)[^>]*>', '', h)
-          h = re.sub(r'\s(style|role|aria-[a-z]+|data-[a-z-]+|srcset|src|loading|width|height|target|rel|onclick)="[^"]*"', '', h)
-          h = re.sub(r'\s+', ' ', h)
-          open(sys.argv[1] + '.c', 'w').write(h)
-          PY
-          get() { curl -sL -A "Mozilla/5.0 (compatible; SportsDashboard/1.0; +https://github.com/watabo-bonobo/SportsDashboard)" -o "out/$1" -w "=== $1 %{http_code} %{size_download} %{url_effective}\n" --max-time 30 "$2"; python3 clean.py "out/$1"; }
-          show() { python3 -c "
-          h=open('out/$1.c').read(); kw='$2'; i=h.find(kw); print('kw',kw,h.count(kw),i); print(h[max(0,i-$3):i+$4] if i>=0 else h[:$4])"; }
-          links() { grep -o "href=\"[^\"]*\"" "out/$1" | sort -u | grep -i "$2" | head -60 | tr '\n' ' '; echo; }
-          get rk "https://leagueh.jp/rankings/?s=2025"
-          python3 -c "
-          h=open('out/rk.c').read(); print('tables', h.count('ranking-table league'), h.count('<table')); import re; print(re.findall(r'<h1[^>]*>([^<]+)</h1>', h))"
-          get rk26 "https://leagueh.jp/rankings/"
-          python3 -c "
-          h=open('out/rk26.c').read(); print('tables', h.count('ranking-table league')); i=h.find('</header>'); print(h[i:i+1500])"
-          for t in men women; do
-            get $t http://handball.or.jp/nationalteam/$t.html
-            python3 -c "
-          h=open('out/$t.c').read(); i=h.find('<main'); i = i if i>=0 else h.find('</header>'); print(h[i:i+5000])"
-          done
-          get ev "http://handball.or.jp/system/prog/game_event_list.php?sd=g&sm=g&ed=i"
-          python3 -c "
-          h=open('out/ev.c').read(); i=h.find('<table'); print(h[i:i+4000])"
-          exit 0
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node collector/collect.js "" public/data/events.json out.json
+      - run: |
+          node -e "
+          const d=require('./out.json');
+          for (const t of d.standings) console.log('TABLE', t.id, t.title, t.rows.length, JSON.stringify(t.rows.slice(0,3)));
+          for (const e of d.events.filter(e=>e.sport==='handball')) console.log(JSON.stringify(e));
+          " || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: out
+          path: out.json

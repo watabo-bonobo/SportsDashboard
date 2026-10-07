@@ -1,8 +1,11 @@
-name: Deploy to GitHub Pages
+name: Collect and deploy to GitHub Pages
 
 on:
   push:
     branches: [main]
+  schedule:
+    # 1時間ごと（毎時7分）に試合情報を集め直して公開する
+    - cron: '7 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -12,7 +15,7 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -28,7 +31,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - uses: actions/configure-pages@v5
+      - id: pages
+        uses: actions/configure-pages@v5
+      - name: Collect match data
+        # 公開中のデータ（前回の収集結果）に、今回集めた情報とリポジトリの手入力分を重ねる
+        run: node collector/collect.js "${{ steps.pages.outputs.base_url }}/data/events.json" public/data/events.json dist/data/events.json
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

@@ -47,7 +47,7 @@ async function main() {
   const now = new Date();
   // 公開中のデータ（前回収集分）→ なければリポジトリの初期データ
   const seed = (await loadBase(seedPath)) ?? [];
-  const base = (baseArg && (await loadBase(baseArg))) ?? seed;
+  const base = (baseArg ? await loadBase(baseArg) : null) ?? seed;
   // リポジトリ側で手で追加・修正したイベントは常に優先して反映する
   const merged = mergeEvents(base, seed);
   const { collected, report } = await collect(now);

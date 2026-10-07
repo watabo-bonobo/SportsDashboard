@@ -2,9 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { EventData, Sport } from './types';
 import { buildBoard, buildSummary, formatClock, formatDate, jstDateKey, relativeDay, SPORT_LABEL } from './schedule';
 import { validateEventData } from './validate';
-import { EventRow, FeaturedCard, ResultRow, SummaryBar } from './components';
+import { EventRow, FeaturedCard, ResultRow, StandingsTable, SummaryBar } from './components';
 
-const SPORTS: Sport[] = ['soccer', 'baseball', 'volleyball', 'basketball', 'tabletennis'];
+const SPORTS: Sport[] = ['soccer', 'baseball', 'volleyball', 'basketball', 'handball', 'tabletennis'];
 const PREFS_KEY = 'sports-dashboard:prefs';
 
 type SportFilter = Sport | 'all';
@@ -46,6 +46,9 @@ export default function App() {
   const [prefs, setPrefs] = useState<Prefs>(loadPrefs);
   const [now, setNow] = useState(currentTime);
 
+  const [rightTab, setRightTab] = useState<'results' | 'standings'>('results');
+  // スマホでは1画面に収めるため、3つのパネルを切り替えて1つずつ表示する
+  const [mobileView, setMobileView] = useState<'next' | 'upcoming' | 'results'>('upcoming');
   const [loading, setLoading] = useState(false);
   const [fetchedAt, setFetchedAt] = useState<Date | null>(null);
 
@@ -92,6 +95,10 @@ export default function App() {
       (e) => (prefs.sport === 'all' || e.sport === prefs.sport) && (!prefs.featuredOnly || e.featured),
     );
   }, [data, prefs]);
+  const standings = useMemo(
+    () => (data?.standings ?? []).filter((t) => prefs.sport === 'all' || t.sport === prefs.sport),
+    [data, prefs.sport],
+  );
   const board = useMemo(() => (visible ? buildBoard(visible, now) : null), [visible, now]);
   const summary = useMemo(() => (visible ? buildSummary(visible, now) : null), [visible, now]);
 
@@ -106,7 +113,7 @@ export default function App() {
       <header className="header">
         <div className="title">
           <h1>スポーツ観戦ダッシュボード</h1>
-          <p className="lead">日本代表・Jリーグ・プロ野球・メジャー・バレー・バスケ・卓球の予定、放送・配信、結果をまとめて確認できます。</p>
+          <p className="lead">応援している競技の予定、放送・配信、結果、順位をまとめて確認できます。</p>
         </div>
         <div className="freshness">
           <p>
@@ -121,7 +128,13 @@ export default function App() {
             <span className={loading ? 'spin' : undefined} aria-hidden="true">
               ↻
             </span>
-            {loading ? '更新中…' : '最新に更新'}
+            {loading ? (
+              '更新中…'
+            ) : (
+              <span>
+                <span className="refresh-long">最新に</span>更新
+              </span>
+            )}
           </button>
           <p className="fetched" aria-live="polite">
             {fetchedAt && !loading ? `${formatClock(fetchedAt)} に読み込みました` : ''}
@@ -158,12 +171,21 @@ export default function App() {
       {board && summary && (
         <>
           <SummaryBar summary={summary} />
-          <nav className="jump" aria-label="ページ内の移動">
-            <a href="#h-upcoming">これからの予定へ</a>
-            <a href="#h-results">最近の結果へ</a>
+          <nav className="views" aria-label="表示する一覧">
+            {(
+              [
+                ['next', '注目'],
+                ['upcoming', '予定'],
+                ['results', '結果・順位'],
+              ] as const
+            ).map(([key, label]) => (
+              <button key={key} type="button" aria-pressed={mobileView === key} onClick={() => setMobileView(key)}>
+                {label}
+              </button>
+            ))}
           </nav>
 
-          <main className="grid">
+          <main className={`grid show-${mobileView}`}>
             <section className="panel area-next" aria-labelledby="h-next">
               <h2 id="h-next" className="panel-title">
                 次の注目試合・大会<span className="count">競技ごと</span>
@@ -205,14 +227,53 @@ export default function App() {
             </section>
 
             <section className="panel area-results" aria-labelledby="h-results">
-              <h2 id="h-results" className="panel-title">
-                最近の結果<span className="count">直近30日・{board.results.length}件</span>
-              </h2>
-              <div className="panel-body">
-                {board.results.length === 0 && <p className="empty">直近30日の結果はありません</p>}
-                {board.results.map((e) => (
-                  <ResultRow key={e.id} event={e} now={now} />
-                ))}
+              <div className="panel-title tabs" role="tablist" aria-label="結果と順位表">
+                <h2 id="h-results" className="visually-hidden">
+                  最近の結果・順位表
+                </h2>
+                <button
+                  type="button"
+                  role="tab"
+                  id="tab-results"
+                  aria-selected={rightTab === 'results'}
+                  aria-controls="tabpanel-right"
+                  onClick={() => setRightTab('results')}
+                >
+                  最近の結果<span className="count">{board.results.length}件</span>
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  id="tab-standings"
+                  aria-selected={rightTab === 'standings'}
+                  aria-controls="tabpanel-right"
+                  onClick={() => setRightTab('standings')}
+                >
+                  順位表<span className="count">{standings.length}表</span>
+                </button>
+              </div>
+              <div
+                className="panel-body"
+                id="tabpanel-right"
+                role="tabpanel"
+                aria-labelledby={rightTab === 'results' ? 'tab-results' : 'tab-standings'}
+              >
+                {rightTab === 'results' ? (
+                  <>
+                    <p className="panel-note">直近30日</p>
+                    {board.results.length === 0 && <p className="empty">直近30日の結果はありません</p>}
+                    {board.results.map((e) => (
+                      <ResultRow key={e.id} event={e} now={now} />
+                    ))}
+                  </>
+                ) : (
+                  <>
+                    {standings.length === 0 && <p className="empty">この競技の順位表はありません</p>}
+                    {standings.map((t) => (
+                      <StandingsTable key={t.id} table={t} />
+                    ))}
+                  </>
+                )}
               </div>
             </section>
           </main>
@@ -221,7 +282,7 @@ export default function App() {
 
       <footer className="footer">
         <p>
-          情報元：JFA、Ｊリーグ公式、NPB、MLB、日本バレーボール協会、テレ東卓球NEWS ほか報道・公式発表。1時間ごとに自動で集めています。
+          情報元：JFA、Ｊリーグ公式、NPB、MLB、日本バレーボール協会、リーグＨ、テレ東卓球NEWS ほか報道・公式発表。1時間ごとに自動で集めています。
         </p>
         <p>放送・配信予定は変更されることがあります。最新の情報は各公式サイトでご確認ください。</p>
       </footer>

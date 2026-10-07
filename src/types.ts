@@ -1,4 +1,4 @@
-export type Sport = 'soccer' | 'baseball' | 'volleyball' | 'basketball' | 'tabletennis';
+export type Sport = 'soccer' | 'baseball' | 'volleyball' | 'basketball' | 'handball' | 'tabletennis';
 
 /** tv: 地上波 / bs: BS・CS / net: ネット配信 */
 export type BroadcastKind = 'tv' | 'bs' | 'net';
@@ -48,7 +48,35 @@ export interface SportEvent {
   source?: string;
 }
 
+export interface StandingRow {
+  rank: number;
+  team: string;
+  played?: number;
+  win: number;
+  draw?: number;
+  loss: number;
+  /** サッカーの勝点 */
+  points?: number;
+  /** サッカーの得失点差 */
+  diff?: number;
+  /** 野球のゲーム差（首位は "-"） */
+  gb?: string;
+  /** 補足（MLB の日本人選手など）。あれば行を強調する */
+  note?: string;
+}
+
+export interface Standings {
+  id: string;
+  sport: Sport;
+  /** 表の名前（例: 明治安田J1リーグ、セ・リーグ） */
+  title: string;
+  rows: StandingRow[];
+  source?: string;
+}
+
 export interface EventData {
   updatedAt: string;
   events: SportEvent[];
+  /** 順位表（自動収集。なければ表示しない） */
+  standings?: Standings[];
 }

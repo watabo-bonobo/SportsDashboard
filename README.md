@@ -1,6 +1,6 @@
 # 観戦ダッシュボード
 
-日本のサッカー（日本代表・J1・天皇杯・ルヴァンカップ）、プロ野球、日本人選手のいるメジャーリーグ、バレー、バスケ日本代表、卓球などの
+日本のサッカー（日本代表・J1・天皇杯・ルヴァンカップ）、プロ野球、日本人選手のいるメジャーリーグ、ハンドボール、バレー、バスケ日本代表、卓球などの
 **予定・放送局／ネット配信・結果** を1画面にまとめる静的Webアプリです。
 
 - 上段: 競技ごとの「次の日本代表戦・注目イベント」とカウントダウン
@@ -36,11 +36,16 @@ GitHub Actions（`.github/workflows/deploy.yml`）が **1時間ごと** に各�
 | NPB「試合日程・結果」（今月・来月） | プロ野球の日程・時刻・球場・結果 | `collector/sources/npb.js` |
 | MLB 公式データ（statsapi.mlb.com） | 日本人選手が所属するチームの試合（直近3日〜7日先）・結果。ポストシーズンは注目扱い | `collector/sources/mlb.js` |
 | 日本バレーボール協会「日本代表 日程」 | 男女日本代表の大会・期間・会場 | `collector/sources/jva.js` |
+| 日本ハンドボール協会「日本代表」 | 男女日本代表（彗星JAPAN・おりひめジャパン）の大会と期間（合宿・遠征は除く） | `collector/sources/jha.js` |
+| リーグＨ「日程・結果」 | ハンドボールのトップリーグ（男女）の直近7日〜3週間先の試合・結果 | `collector/sources/leagueh.js` |
 | テレ東卓球「大会日程」 | WTT・ITTF の大会と期間 | `collector/sources/tvtokyo-tabletennis.js` |
 
 自動で取れない情報（バスケ日本代表、代表戦や野球の放送局など）は `public/data/events.json` に手で書きます。
 収集した情報と同じ試合があれば、手入力の放送局や時刻は残したまま、結果などが上書きされます。
 過去60日より前の試合は自動で消えます。
+
+順位表は J1（Ｊリーグ公式）、プロ野球（NPB「チーム勝敗表」）、リーグＨ（シーズン開幕後）を集め、
+画面右の「順位表」タブに表示します。取れなかった表は前回のものを表示し続けます。
 
 各サイトのページの作りが変わると、そのサイトの分だけ収集が止まります（他のサイトと前回データはそのまま表示されます）。
 ローカルでの試し方: `node collector/collect.js "" public/data/events.json /tmp/out.json`
@@ -50,7 +55,7 @@ GitHub Actions（`.github/workflows/deploy.yml`）が **1時間ごと** に各�
 ```jsonc
 {
   "id": "samurai-20261114",            // 一意なID
-  "sport": "soccer",                    // soccer | baseball | volleyball | basketball | tabletennis
+  "sport": "soccer",                    // soccer | baseball | volleyball | basketball | handball | tabletennis
   "competition": "KALLANG FOOTBALL SERIES SINGAPORE",
   "round": "第9節",                     // 任意
   "home": "日本", "away": "ブラジル",    // 対戦形式の場合

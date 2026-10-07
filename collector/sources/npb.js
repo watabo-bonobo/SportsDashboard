@@ -58,3 +58,50 @@ export function parse(html, url) {
   });
   return events;
 }
+
+const SHORT_NAME = {
+  阪神タイガース: '阪神', 読売ジャイアンツ: '巨人', 横浜DeNAベイスターズ: 'DeNA', 広島東洋カープ: '広島',
+  東京ヤクルトスワローズ: 'ヤクルト', 中日ドラゴンズ: '中日', 福岡ソフトバンクホークス: 'ソフトバンク',
+  北海道日本ハムファイターズ: '日本ハム', 'オリックス・バファローズ': 'オリックス',
+  東北楽天ゴールデンイーグルス: '楽天', 埼玉西武ライオンズ: '西武', 千葉ロッテマリーンズ: 'ロッテ',
+};
+
+/** NPB「チーム勝敗表」（std_c.html / std_p.html）の最初の表を読む */
+export function parseStandings(html) {
+  const $ = cheerio.load(html);
+  const rows = [];
+  $('table')
+    .first()
+    .find('tbody tr')
+    .each((i, tr) => {
+      const td = $(tr)
+        .find('td')
+        .map((_, c) => $(c).text().replace(/\s+/g, ''))
+        .get();
+      if (td.length < 7 || !/^\d+$/.test(td[1])) return;
+      rows.push({
+        rank: i + 1,
+        team: SHORT_NAME[td[0]] ?? td[0],
+        played: Number(td[1]),
+        win: Number(td[2]),
+        loss: Number(td[3]),
+        draw: Number(td[4]),
+        gb: td[6] === '--' ? '-' : td[6],
+      });
+    });
+  return rows;
+}
+
+export async function standings(now, fetchText) {
+  const y = new Date(now.getTime() + 9 * 3600000).getUTCFullYear();
+  const out = [];
+  for (const [league, file, title] of [
+    ['c', 'std_c', 'セ・リーグ'],
+    ['p', 'std_p', 'パ・リーグ'],
+  ]) {
+    const url = `https://npb.jp/bis/${y}/stats/${file}.html`;
+    const rows = parseStandings(await fetchText(url));
+    if (rows.length) out.push({ id: `npb-${league}`, sport: 'baseball', title: `プロ野球 ${title}`, rows, source: url });
+  }
+  return out;
+}

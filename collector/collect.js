@@ -17,7 +17,7 @@ async function loadBase(where) {
   try {
     const text = /^https?:/.test(where) ? await fetchText(`${where}?t=${Date.now()}`) : await readFile(where, 'utf8');
     const data = JSON.parse(text);
-    if (Array.isArray(data.events)) return data.events;
+    if (Array.isArray(data.events)) return { events: data.events, standings: data.standings ?? [] };
   } catch (e) {
     console.warn(`前回データを読めませんでした (${where}): ${e.message}`);
   }
@@ -53,19 +53,40 @@ export async function collect(now = new Date()) {
   return { collected, report };
 }
 
+/** 順位表を集める。取れなかった表は前回のものを残す */
+export async function collectStandings(now, previous = [], fetch = fetchText) {
+  // 取れなかった取得元の表だけ前回分を残す。外した取得元の表は持ち越さない
+  const tables = [];
+  const report = [];
+  for (const src of SOURCES) {
+    if (!src.standings) continue;
+    try {
+      const got = await src.standings(now, fetch);
+      tables.push(...got.map((t) => ({ ...t, from: src.name })));
+      report.push(`✓ ${src.name}（順位表）: ${got.length}表`);
+    } catch (e) {
+      tables.push(...previous.filter((t) => t.from === src.name));
+      report.push(`✗ ${src.name}（順位表）: ${e.message}`);
+    }
+  }
+  return { standings: tables, report };
+}
+
 async function main() {
   const [baseArg, seedPath = 'public/data/events.json', outPath = seedPath] = process.argv.slice(2);
   const now = new Date();
   // 公開中のデータ（前回収集分）→ なければリポジトリの初期データ
-  const seed = (await loadBase(seedPath)) ?? [];
+  const seed = (await loadBase(seedPath)) ?? { events: [], standings: [] };
   const base = (baseArg ? await loadBase(baseArg) : null) ?? seed;
   // リポジトリ側で手で追加・修正したイベントは常に優先して反映する
-  const merged = mergeEvents(base, seed);
+  const merged = mergeEvents(base.events, seed.events);
   const { collected, report } = await collect(now);
-  console.log(report.join('\n'));
+  const st = await collectStandings(now, base.standings);
+  console.log([...report, ...st.report].join('\n'));
   const events = pruneOld(mergeEvents(merged, collected), now);
   const jst = new Date(now.getTime() + 9 * 3600000).toISOString().replace('T', ' ').slice(0, 16);
-  await writeFile(outPath, JSON.stringify({ updatedAt: jst, events }, null, 2) + '\n');
+  const out = { updatedAt: jst, events, standings: st.standings };
+  await writeFile(outPath, JSON.stringify(out, null, 2) + '\n');
   console.log(`${events.length}件を書き出しました: ${outPath}`);
 }
 

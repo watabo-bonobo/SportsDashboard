@@ -113,3 +113,38 @@ export function parse(html, url) {
   });
   return events;
 }
+
+/** Ｊリーグ公式の順位表ページ（/j1/standings/）を読む */
+export function parseStandings(html) {
+  const $ = resolveStreamedHtml(cheerio.load(html));
+  const rows = [];
+  const num = (row, key) => {
+    const t = row.find(`.o-table__cell--${key}`).first().text().replace(/[^\d+-]/g, '');
+    return t === '' ? undefined : Number(t);
+  };
+  $('tr.o-table__row').each((_, tr) => {
+    const row = $(tr);
+    const names = row.find('.o-table__club-link span');
+    // 正式名と略称が並んでいる。略称（2つ目）があればそちらを使う
+    const team = (names.eq(1).text() || names.eq(0).text()).trim();
+    const rank = num(row, 'ranking');
+    if (!team || rank === undefined) return;
+    rows.push({
+      rank,
+      team,
+      played: num(row, 'match'),
+      win: num(row, 'win') ?? 0,
+      draw: num(row, 'draw') ?? 0,
+      loss: num(row, 'loss') ?? 0,
+      diff: num(row, 'goal-difference'),
+      points: num(row, 'point') ?? 0,
+    });
+  });
+  return rows;
+}
+
+export async function standings(_now, fetchText) {
+  const url = 'https://www.jleague.jp/j1/standings/';
+  const rows = parseStandings(await fetchText(url));
+  return rows.length ? [{ id: 'jleague-j1', sport: 'soccer', title: '明治安田Ｊ１リーグ', rows, source: url }] : [];
+}

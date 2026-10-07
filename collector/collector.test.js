@@ -241,3 +241,96 @@ describe('ダブルヘッダー', () => {
     expect(out.map((e) => e.id)).toEqual(['mlb-1', 'mlb-2']);
   });
 });
+
+describe('順位表', () => {
+  it('Ｊ１の順位表（略称・勝点・得失点差）を読む', async () => {
+    const jl = await import('./sources/jleague.js');
+    const cell = (k, v) => `<td class="o-table__cell o-table__cell--${k}"><p>${v}</p></td>`;
+    const row = (rank, full, short, pts, m, w, d, l, gd) =>
+      `<tr class="rt-TableRow o-table__row">${cell('ranking', rank)}<td class="o-table__cell--club"><a class="o-table__club-link" href="/club/x/"><span>${full}</span><span>${short}</span></a></td>${cell('point', pts)}${cell('match', m)}${cell('win', w)}${cell('draw', d)}${cell('loss', l)}${cell('goal-scored', 9)}${cell('goal-lost', 9)}${cell('goal-difference', gd)}</tr>`;
+    const html = `<table><tbody>${row(1, 'ヴィッセル神戸', '神戸', 19, 8, 6, 1, 1, '+8')}${row(20, 'ジェフユナイテッド千葉', '千葉', 3, 8, 0, 3, 5, '-9')}</tbody></table>`;
+    expect(jl.parseStandings(html)).toEqual([
+      { rank: 1, team: '神戸', played: 8, win: 6, draw: 1, loss: 1, diff: 8, points: 19 },
+      { rank: 20, team: '千葉', played: 8, win: 0, draw: 3, loss: 5, diff: -9, points: 3 },
+    ]);
+  });
+
+  it('NPB のチーム勝敗表を略称で読む', async () => {
+    const npb = await import('./sources/npb.js');
+    const html = `<table class="tablefix2"><thead><tr><th>チーム</th></tr></thead><tbody>
+      <tr class="ststats"><td>阪神タイガース</td><td>141</td><td>78</td><td>61</td><td>2</td><td>.561</td><td>--</td><td>36-32</td></tr>
+      <tr class="ststats"><td>読売ジャイアンツ</td><td>143</td><td>76</td><td>64</td><td>3</td><td>.543</td><td>2.5</td><td>39-31</td></tr>
+    </tbody></table><table><tbody><tr><td>交流戦の表は読まない</td></tr></tbody></table>`;
+    expect(npb.parseStandings(html)).toEqual([
+      { rank: 1, team: '阪神', played: 141, win: 78, loss: 61, draw: 2, gb: '-' },
+      { rank: 2, team: '巨人', played: 143, win: 76, loss: 64, draw: 3, gb: '2.5' },
+    ]);
+  });
+
+  it('取れなかった表は前回のものを残す', async () => {
+    const { collectStandings } = await import('./collect.js');
+    const prev = [
+      { id: 'old-table', sport: 'soccer', title: '前回', rows: [], from: 'Ｊリーグ公式' },
+      { id: 'mlb-203', sport: 'baseball', title: '外した取得元', rows: [], from: 'MLB（日本人選手の所属チーム）' },
+    ];
+    const failing = async () => {
+      throw new Error('offline');
+    };
+    const { standings, report } = await collectStandings(NOW, prev, failing);
+    expect(standings).toEqual([prev[0]]);
+    expect(report.every((r) => r.startsWith('✗'))).toBe(true);
+  });
+});
+
+describe('ハンドボール', () => {
+  it('リーグＨの日別一覧から試合と結果を読む', async () => {
+    const lh = await import('./sources/leagueh.js');
+    const game = (code, time, venue, a, b, score = '', movie = '') => `<li class="col"><div class="field"><div class="heading">
+      <strong>2026-27 リーグＨ レギュラーシーズン</strong><a href="/schedule/${code}/"><span><em>${time}</em>${venue}</span></a>
+      ${movie ? `<p class="movie"><a href="${movie}">試合動画</a></p>` : ''}</div>
+      <div class="body"><div class="team"><a href="/schedule/${code}/">${a}</a></div><div class="team"><a href="/schedule/${code}/">${b}</a></div>
+      <div class="score">${score}</div></div></div></li>`;
+    const html = `<div class="swiper-slide div_day" id="div_day_12"></div><div class="swiper-slide div_day" id="div_day_17"></div>
+      <div class="game-list" id="game-list"><ul>
+      ${game('511M03', '13:00', '泉大津市立総合体育館', '大同フェニックス東海', '琉球コラソン')}
+      ${game('511W08', '14:30', 'マエダハウジング東区スポーツセンター', 'イズミメイプルレッズ広島', 'ハニービー石川', '<span>23</span><span>34</span>', 'https://tv-leagueh.example/live')}
+      </ul></div>`;
+    expect(lh.parseDays(html)).toEqual([12, 17]);
+    const events = lh.parseDay(html, '2026-10-12');
+    expect(events.map((e) => [e.id, e.round, e.home, e.away, e.start, e.venue, e.result, e.broadcasts?.[0].kind])).toEqual([
+      ['lh-511M03', '男子 レギュラーシーズン', '大同フェニックス東海', '琉球コラソン', '2026-10-12T13:00:00+09:00', '泉大津市立総合体育館', undefined, undefined],
+      ['lh-511W08', '女子 レギュラーシーズン', 'イズミメイプルレッズ広島', 'ハニービー石川', '2026-10-12T14:30:00+09:00', 'マエダハウジング東区スポーツセンター', { home: 23, away: 34 }, 'net'],
+    ]);
+    expect(lh.seasonOf(2027, 3)).toBe(2026);
+    expect(lh.seasonOf(2026, 10)).toBe(2026);
+  });
+
+  it('リーグＨの順位表を男女別に読む', async () => {
+    const lh = await import('./sources/leagueh.js');
+    const table = (team) => `<table class="ranking-table league"><tbody><tr><th>1</th><td class="team"><a><div>${team}</div></a></td>
+      <td class="point">50</td><td>26</td><td>25</td><td>0</td><td>1</td><td>957</td><td>724</td><td>233</td><td>8.6</td></tr></tbody></table>`;
+    expect(lh.parseStandings(table('ブレイヴキングス刈谷') + table('ＨＣ名古屋'))).toEqual([
+      [{ rank: 1, team: 'ブレイヴキングス刈谷', points: 50, played: 26, win: 25, draw: 0, loss: 1, diff: 233 }],
+      [{ rank: 1, team: 'ＨＣ名古屋', points: 50, played: 26, win: 25, draw: 0, loss: 1, diff: 233 }],
+    ]);
+  });
+
+  it('日本代表の活動スケジュールから大会だけを取り込む', async () => {
+    const jha = await import('./sources/jha.js');
+    expect(jha.parseRange('2026/9/19 ～ 9/29')).toEqual({ start: '2026-09-19', end: '2026-09-29' });
+    expect(jha.parseRange('2026/12/上旬')).toBeNull();
+    const list = `<table class="content_table"><tr><th>期間</th></tr>
+      <tr><td>2026/11/23 〜 2026/12/03</td><td>国際</td><td><a href="game_event_outline.php?eid=415">第21回女子ハンドボールアジア選手権</a></td><td>カザフスタン</td></tr></table>`;
+    const dates = jha.parseEventList(list);
+    const page = `<table class="nationalteam_schedule_table">
+      <tr><td>2026/9/11 ～ 9/18</td><td>第2回強化合宿</td><td>東京都</td></tr>
+      <tr><td>2026/9/19 ～ 9/27</td><td><a href="../system/prog/game_event_outline.php?eid=402">第20回アジア競技大会（2026/愛知・名古屋）</a></td><td>愛知県</td></tr>
+      <tr><td>2026/12/上旬</td><td><a href="../system/prog/game_event_outline.php?eid=415">第21回女子ハンドボールアジア選手権</a></td><td>カザフスタン</td></tr>
+    </table>`;
+    const team = { key: 'w', page: 'women', gender: '女子', competition: 'ハンドボール女子日本代表（おりひめジャパン）' };
+    expect(jha.parseTeamPage(page, team, dates).map((e) => [e.id, e.title, e.start, e.end])).toEqual([
+      ['jha-w-402', '第20回アジア競技大会（2026/愛知・名古屋）（女子）', '2026-09-19', '2026-09-27'],
+      ['jha-w-415', '第21回女子ハンドボールアジア選手権', '2026-11-23', '2026-12-03'],
+    ]);
+  });
+});

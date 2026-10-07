@@ -24,6 +24,8 @@
   --volleyball-tint: #fff0e5;
   --basketball: #7a5100;
   --basketball-tint: #fff6db;
+  --handball: #6a2c91;
+  --handball-tint: #f4ebfa;
   --tabletennis: #146a3e;
   --tabletennis-tint: #e6f5ec;
 
@@ -58,6 +60,8 @@
     --volleyball-tint: #3d2414;
     --basketball: #f5cb5c;
     --basketball-tint: #3a2f12;
+    --handball: #d6a8f5;
+    --handball-tint: #2e1a3b;
     --tabletennis: #6fd3a0;
     --tabletennis-tint: #143323;
 
@@ -355,6 +359,10 @@ h1 {
   --c: var(--basketball);
   --c-tint: var(--basketball-tint);
 }
+.sport-handball {
+  --c: var(--handball);
+  --c-tint: var(--handball-tint);
+}
 .sport-tabletennis {
   --c: var(--tabletennis);
   --c-tint: var(--tabletennis-tint);
@@ -510,32 +518,6 @@ h1 {
   color: var(--primary);
   text-decoration: underline;
 }
-@media (max-width: 640px) {
-  .app {
-    padding: 16px;
-  }
-  h1 {
-    font-size: 20px;
-  }
-  .freshness .fetched {
-    text-align: left;
-  }
-  .row {
-    grid-template-columns: 72px minmax(0, 1fr);
-    gap: 4px 12px;
-  }
-  .side {
-    grid-column: 2;
-    align-items: flex-start;
-  }
-  .bcs {
-    justify-content: flex-start;
-  }
-  .stat-value {
-    font-size: 24px;
-  }
-}
-
 /* ---- broadcasts: 種類は文字でも示す ---- */
 .bcs {
   list-style: none;
@@ -645,52 +627,411 @@ h1 {
   white-space: nowrap;
 }
 
-/* ---- スマートフォン ---- */
-.jump {
+/* ---- 右パネルのタブ（最近の結果 / 順位表）---- */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.panel-title.tabs {
+  justify-content: flex-start;
+  gap: 0;
+  padding: 0 8px;
+}
+.tabs button {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: var(--text-sub);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.tabs button[aria-selected='true'] {
+  color: var(--text);
+  font-weight: 700;
+  border-bottom-color: var(--primary);
+}
+.tabs button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: -3px;
+}
+.panel-note {
+  font-size: 12px;
+  color: var(--text-sub);
+  padding-top: 8px;
+}
+
+/* ---- 順位表 ---- */
+.standings {
+  padding: 12px 0 8px;
+  border-bottom: 1px solid var(--line);
+}
+.standings-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  margin-bottom: 8px;
+}
+.standings-title a {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-sub);
+}
+.standings table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.standings th,
+.standings td {
+  padding: 4px 4px;
+  text-align: right;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.standings thead th {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-sub);
+  border-bottom-color: var(--line-strong);
+}
+.standings .team-col {
+  text-align: left;
+  font-weight: 500;
+  white-space: normal;
+  width: 100%;
+}
+.standings .pts-col {
+  font-weight: 700;
+}
+.standings tr.is-featured {
+  background: var(--featured);
+}
+.row-note {
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-sub);
+}
+
+/* ---- スマートフォン：文字と余白を詰め、1画面に収める ----
+ * 3つのパネルは「注目／予定／結果・順位」で切り替え、パネルの中だけをスクロールする */
+.views {
   display: none;
 }
 @media (max-width: 640px) {
-  .summary {
-    gap: 8px;
+  body {
+    font-size: 14px;
+    line-height: 1.5;
   }
-  .stat {
+  .app {
+    display: flex;
     flex-direction: column;
-    gap: 0;
-    padding: 8px 12px;
+    height: 100vh;
+    height: 100dvh;
+    padding: 8px 12px 6px;
   }
-  .stat-label {
-    font-size: 13px;
+  .header {
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 6px;
   }
-  .stat-value {
+  .title {
+    min-width: 0;
+  }
+  h1 {
+    font-size: 15px;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .lead {
+    display: none;
+  }
+  .freshness {
+    flex-wrap: nowrap;
+    gap: 8px;
+    font-size: 11px;
+    line-height: 1.3;
+  }
+  .freshness .label {
+    display: block;
+    margin-right: 0;
+  }
+  .freshness p:first-child {
+    display: none;
+  }
+  .freshness p {
     white-space: nowrap;
   }
+  .fetched {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  .refresh-long {
+    display: none;
+  }
+  .refresh {
+    flex-shrink: 0;
+    min-height: 32px;
+    padding: 0 10px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .filters {
+    gap: 4px 12px;
+    margin: 6px 0;
+  }
+  /* 競技が7つあるので、4列×2段に並べる */
   .segmented {
-    display: flex;
-    flex-wrap: nowrap;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     width: 100%;
   }
   .segmented button {
-    flex: 1 1 auto;
-    padding: 0 6px;
+    min-height: 30px;
+    padding: 0 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--line);
+  }
+  .segmented button:nth-child(4n) {
+    border-right: 0;
+  }
+  .segmented button:nth-child(n + 5) {
+    border-bottom: 0;
+  }
+  .toggle {
+    font-size: 12px;
+    gap: 6px;
+  }
+  .toggle input {
+    width: 16px;
+    height: 16px;
+  }
+  .summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+    margin-bottom: 6px;
+  }
+  .stat {
+    align-items: center;
+    padding: 2px 8px;
+  }
+  .stat-label {
+    font-size: 11px;
+    line-height: 1.3;
+  }
+  .stat-value {
+    font-size: 16px;
     white-space: nowrap;
   }
-  .freshness {
-    gap: 4px 16px;
+  .stat-unit {
+    font-size: 11px;
+    margin: 0 4px 0 1px;
   }
-  .jump {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 16px;
-  }
-  .jump a {
-    flex: 1;
-    text-align: center;
-    padding: 8px;
+  .views {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     border: 1px solid var(--line-strong);
     border-radius: var(--radius);
+    overflow: hidden;
     background: var(--panel);
+    margin-bottom: 6px;
+  }
+  .views button {
+    min-height: 34px;
+    border: 0;
+    border-right: 1px solid var(--line);
+    background: transparent;
     color: var(--text);
-    text-decoration: none;
+    font: inherit;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .views button:last-child {
+    border-right: 0;
+  }
+  .views button[aria-pressed='true'] {
+    background: var(--primary);
+    color: #fff;
+    font-weight: 700;
+  }
+
+  /* 選んだパネルだけを残りの高さいっぱいに表示する */
+  .grid {
+    display: flex;
+    align-items: stretch;
+    flex: 1;
+    min-height: 0;
+  }
+  .grid > .panel {
+    display: none;
+  }
+  .grid.show-next .area-next,
+  .grid.show-upcoming .area-upcoming,
+  .grid.show-results .area-results {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+  }
+  .grid .panel-body,
+  .grid .area-next .panel-body {
+    flex: 1;
+    min-height: 0;
+    height: auto;
+    overflow-y: auto;
+    padding: 0 10px 6px;
+  }
+  .featured {
+    display: flex;
+    gap: 8px;
+    padding-top: 8px;
+  }
+  .panel-title {
     font-size: 14px;
+    padding: 6px 10px;
+  }
+  .panel-title.tabs {
+    padding: 0 4px;
+  }
+  .tabs button {
+    min-height: 36px;
+    padding: 0 8px;
+    font-size: 14px;
+    gap: 6px;
+  }
+  .count,
+  .rel {
+    font-size: 11px;
+  }
+  .day-head {
+    font-size: 13px;
+    padding: 6px 0 2px;
+  }
+  .row {
+    grid-template-columns: 62px minmax(0, 1fr);
+    gap: 2px 8px;
+    padding: 6px 2px;
+  }
+  .when {
+    font-size: 12px;
+  }
+  .match {
+    font-size: 14px;
+    line-height: 1.4;
+    margin-top: 0;
+  }
+  .meta,
+  .venue,
+  .note,
+  .links,
+  .card-sub {
+    font-size: 11px;
+  }
+  .tag {
+    font-size: 11px;
+    padding: 0 6px;
+    line-height: 1.6;
+  }
+  .side {
+    grid-column: 2;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .bcs {
+    justify-content: flex-start;
+    gap: 4px;
+  }
+  .bc,
+  .bc-none {
+    font-size: 11px;
+    padding: 0 6px;
+  }
+  .bc-kind {
+    font-size: 10px;
+  }
+  .card {
+    padding: 8px 10px;
+  }
+  .card-match {
+    font-size: 14px;
+    margin-top: 2px;
+  }
+  .card-when,
+  .countdown {
+    font-size: 13px;
+  }
+  .result {
+    padding: 6px 2px;
+  }
+  .score {
+    gap: 8px;
+    margin: 2px 0 0;
+  }
+  .team {
+    font-size: 13px;
+  }
+  .pts {
+    font-size: 16px;
+  }
+  .result-foot,
+  .panel-note {
+    font-size: 11px;
+  }
+  .outcome {
+    font-size: 11px;
+  }
+  .standings {
+    padding: 8px 0 6px;
+  }
+  .standings-title {
+    font-size: 13px;
+    margin-bottom: 4px;
+  }
+  .standings table {
+    font-size: 12px;
+  }
+  .standings thead th,
+  .standings-title a,
+  .row-note {
+    font-size: 11px;
+  }
+  .standings th,
+  .standings td {
+    padding: 2px 3px;
+  }
+  .footer {
+    margin-top: 4px;
+    font-size: 11px;
+    line-height: 1.4;
+  }
+  /* 注意書きは PC 表示に任せ、スマホでは情報元だけを残す */
+  .footer p + p {
+    display: none;
+  }
+}
+@media (max-width: 640px) and (prefers-color-scheme: dark) {
+  .views button[aria-pressed='true'] {
+    color: #111214;
   }
 }

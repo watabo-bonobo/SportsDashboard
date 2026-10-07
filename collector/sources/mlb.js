@@ -93,10 +93,19 @@ export function parseSchedule(schedule, byTeam) {
   return events;
 }
 
+// 試合と順位表の両方で使うので、1回の収集で選手一覧は1度だけ取る
+let japaneseCache;
+async function loadJapanese(season, fetchText) {
+  if (japaneseCache?.season !== season) {
+    const players = fetchText(`${API}/sports/1/players?season=${season}`).then((t) => japaneseByTeam(JSON.parse(t).people ?? []));
+    japaneseCache = { season, players };
+  }
+  return japaneseCache.players;
+}
+
 export async function collect(now, fetchText) {
   const season = now.getUTCFullYear();
-  const players = JSON.parse(await fetchText(`${API}/sports/1/players?season=${season}`)).people ?? [];
-  const byTeam = japaneseByTeam(players);
+  const byTeam = await loadJapanese(season, fetchText);
   if (!byTeam.size) return [];
   // 直近3日の結果と、7日先までの予定
   const params = new URLSearchParams({

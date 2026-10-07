@@ -26,18 +26,23 @@ jobs:
           show() { python3 -c "
           h=open('out/$1.c').read(); kw='$2'; i=h.find(kw); print('kw',kw,h.count(kw),i); print(h[max(0,i-$3):i+$4] if i>=0 else h[:$4])"; }
           links() { grep -o "href=\"[^\"]*\"" "out/$1" | sort -u | grep -i "$2" | head -60 | tr '\n' ' '; echo; }
-          get j1s https://www.jleague.jp/standings/j1/
-          show j1s '鹿島' 3000 3000
-          get npbc https://npb.jp/bis/2026/stats/std_c.html
-          show npbc '阪神' 1500 3000
-          get mlbst "https://statsapi.mlb.com/api/v1/standings?leagueId=103,104&season=2026&standingsTypes=regularSeason"
-          head -c 1500 out/mlbst; echo
+          get j1s https://www.jleague.jp/j1/standings/
+          python3 - <<'PY'
+          import re
+          h=open('out/j1s.c').read()
+          print('tables', h.count('<table'), 'rows', h.count('o-table__row'), 'hidden S:', h.count('hidden id="S:'))
+          print(re.findall(r'<h[1-4][^>]*>(.{0,120}?)</h[1-4]>', h)[:30])
+          print(re.findall(r'o-table__club-link" href="([^"]+)"', h)[:60])
+          PY
+          get lhs https://leagueh.jp/schedule/
+          show lhs '2026' 300 5000
+          get lhm https://leagueh.jp/schedule/511M01/
+          show lhm 'vs' 1500 5000
+          get lhr https://leagueh.jp/rankings/
+          show lhr '1' 0 200
+          python3 -c "
+          h=open('out/lhr.c').read(); i=h.find('<table'); print(h[i-1500:i+5000])"
           get jha https://www.handball.jp/
-          links jha 'national\|japan\|schedule\|game\|match\|日程'
-          get lh https://leagueh.jp/
-          links lh 'schedule\|game\|match\|standing\|rank'
-          get jhl https://www.japan-handball-league.jp/
-          links jhl 'schedule\|game\|match'
-          get jha2 https://www.handball.jp/national_team/
-          links jha2 'schedule\|game\|match\|men\|women'
+          curl -sIL -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128 Safari/537.36" --max-time 40 https://www.handball.jp/ | head -20
+          curl -sIL --max-time 40 http://handball.jp/ | head -10
           exit 0

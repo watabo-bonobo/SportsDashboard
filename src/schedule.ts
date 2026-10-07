@@ -137,9 +137,13 @@ export function formatDate(dateKey: string): string {
 
 /** "14:00"（日本時間）。時刻未定なら "時間未定" */
 export function formatTime(e: SportEvent): string {
-  if (!hasTime(e)) return '時間未定';
-  const d = new Date(new Date(e.start).getTime() + JST_OFFSET_MS);
-  return `${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
+  return hasTime(e) ? formatClock(new Date(e.start)) : '時間未定';
+}
+
+/** Date を日本時間の "HH:MM" に */
+export function formatClock(d: Date): string {
+  const j = new Date(d.getTime() + JST_OFFSET_MS);
+  return `${String(j.getUTCHours()).padStart(2, '0')}:${String(j.getUTCMinutes()).padStart(2, '0')}`;
 }
 
 export function formatPeriod(e: SportEvent): string {

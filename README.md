@@ -8,6 +8,9 @@
 - 右: 直近30日の結果
 - 競技での絞り込み、「日本代表・注目のみ」表示（設定はブラウザに保存）
 - 各試合から Google カレンダーに追加、情報の出典へのリンク
+- 「更新」ボタンでページを開いたまま最新の `events.json` を取り直す
+
+公開URL（GitHub Pages）: https://watabo-bonobo.github.io/SportsDashboard/
 
 ## 使い方
 

@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { EventData, Sport } from './types';
-import { buildBoard, formatDate, jstDateKey, relativeDay, SPORT_ICON, SPORT_LABEL } from './schedule';
+import { buildBoard, formatClock, formatDate, jstDateKey, relativeDay, SPORT_ICON, SPORT_LABEL } from './schedule';
 import { validateEventData } from './validate';
 import { EventRow, FeaturedCard, ResultRow } from './components';
 
@@ -38,8 +38,14 @@ export default function App() {
   const [prefs, setPrefs] = useState<Prefs>(loadPrefs);
   const [now, setNow] = useState(currentTime);
 
-  useEffect(() => {
-    fetch(`${import.meta.env.BASE_URL}data/events.json`, { cache: 'no-cache' })
+  const [loading, setLoading] = useState(false);
+  const [fetchedAt, setFetchedAt] = useState<Date | null>(null);
+
+  // 最新の events.json を取り直す（更新ボタンからも呼ぶ）
+  const load = useCallback(() => {
+    setLoading(true);
+    // キャッシュに古いファイルが残っていても確実に最新を取るため、クエリを付ける
+    fetch(`${import.meta.env.BASE_URL}data/events.json?t=${Date.now()}`, { cache: 'no-store' })
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json() as Promise<EventData>;
@@ -48,9 +54,15 @@ export default function App() {
         const problems = validateEventData(d);
         if (problems.length) console.warn('events.json に問題があります:\n' + problems.join('\n'));
         setData(d);
+        setError(null);
+        setFetchedAt(new Date());
+        setNow(currentTime());
       })
-      .catch((e: unknown) => setError(String(e)));
+      .catch((e: unknown) => setError(String(e)))
+      .finally(() => setLoading(false));
   }, []);
+
+  useEffect(load, [load]);
 
   // 日付が変わったら表示を更新
   useEffect(() => {
@@ -91,6 +103,13 @@ export default function App() {
             {formatDate(today)}
             {data && <span className="updated"> ・ データ更新 {data.updatedAt}</span>}
           </span>
+          <button type="button" className="refresh" onClick={load} disabled={loading}>
+            <span className={loading ? 'spin' : undefined} aria-hidden="true">
+              ↻
+            </span>
+            {loading ? '更新中…' : '更新'}
+          </button>
+          {fetchedAt && !loading && <span className="updated">{formatClock(fetchedAt)} 取得</span>}
         </div>
         <nav className="filters" aria-label="絞り込み">
           {SPORTS.map((s) => (

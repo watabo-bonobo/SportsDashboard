@@ -195,3 +195,49 @@ export function googleCalendarUrl(e: SportEvent): string {
   });
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
+
+export type Outcome = 'win' | 'draw' | 'loss';
+
+/** 日本が出場した試合の勝敗（日本側から見て）。日本の試合でなければ null */
+export function japanOutcome(e: SportEvent): Outcome | null {
+  if (!e.result || !e.home || !e.away) return null;
+  const isJapan = (s: string) => /^日本(代表)?$/.test(s);
+  if (!isJapan(e.home) && !isJapan(e.away)) return null;
+  const [mine, theirs] = isJapan(e.home) ? [e.result.home, e.result.away] : [e.result.away, e.result.home];
+  if (mine > theirs) return 'win';
+  if (mine < theirs) return 'loss';
+  // 同点で PK 戦の勝敗が分かれば反映する（"PK 5-4" は前が日本側とみなさず、ホーム側の数字）
+  const pk = e.result.note?.match(/PK\s*(\d+)\s*-\s*(\d+)/);
+  if (pk) {
+    const [h, a] = [Number(pk[1]), Number(pk[2])];
+    const [m, t] = isJapan(e.home) ? [h, a] : [a, h];
+    if (m !== t) return m > t ? 'win' : 'loss';
+  }
+  return 'draw';
+}
+
+export interface Summary {
+  today: number;
+  week: number;
+  freeTv: number;
+  record: Record<Outcome, number>;
+}
+
+/** 画面上部の「全体」を表す数字 */
+export function buildSummary(events: SportEvent[], now: Date): Summary {
+  const today = jstDateKey(now);
+  const summary: Summary = { today: 0, week: 0, freeTv: 0, record: { win: 0, draw: 0, loss: 0 } };
+  for (const e of events) {
+    const start = startDateKey(e);
+    const end = endDateKey(e);
+    const until = daysBetween(today, start);
+    if (start <= today && today <= end) summary.today++;
+    if (until >= 0 && until < 7) {
+      summary.week++;
+      if (e.broadcasts?.some((b) => b.kind === 'tv')) summary.freeTv++;
+    }
+    const outcome = japanOutcome(e);
+    if (outcome && daysBetween(end, today) <= 30 && daysBetween(end, today) >= 0) summary.record[outcome]++;
+  }
+  return summary;
+}

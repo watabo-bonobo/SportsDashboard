@@ -89,3 +89,29 @@ describe('public/data/events.json', () => {
     expect(validateEventData(data)).toEqual([]);
   });
 });
+
+describe('japanOutcome / buildSummary', () => {
+  it('日本側から見た勝敗。PK戦の勝敗も反映', async () => {
+    const { japanOutcome } = await import('./schedule');
+    expect(japanOutcome(ev({ home: '日本', away: 'X', result: { home: 2, away: 1 } }))).toBe('win');
+    expect(japanOutcome(ev({ home: 'X', away: '日本', result: { home: 2, away: 1 } }))).toBe('loss');
+    expect(japanOutcome(ev({ home: '日本', away: 'X', result: { home: 0, away: 0, note: 'PK 5-4' } }))).toBe('win');
+    expect(japanOutcome(ev({ home: '日本', away: 'X', result: { home: 1, away: 1 } }))).toBe('draw');
+    expect(japanOutcome(ev({ home: 'A', away: 'B', result: { home: 1, away: 0 } }))).toBeNull();
+  });
+
+  it('今日・7日以内・地上波・直近の日本の戦績を数える', async () => {
+    const { buildSummary } = await import('./schedule');
+    const s = buildSummary(
+      [
+        ev({ id: 'a', start: '2026-10-07T19:00:00+09:00', broadcasts: [{ name: 'NHK', kind: 'tv' }] }),
+        ev({ id: 'b', start: '2026-10-01', end: '2026-10-11' }),
+        ev({ id: 'c', start: '2026-10-13T19:00:00+09:00' }),
+        ev({ id: 'd', start: '2026-10-20T19:00:00+09:00' }),
+        ev({ id: 'e', home: '日本', start: '2026-10-05', result: { home: 2, away: 1 } }),
+      ],
+      NOW,
+    );
+    expect(s).toEqual({ today: 2, week: 2, freeTv: 1, record: { win: 1, draw: 0, loss: 0 } });
+  });
+});

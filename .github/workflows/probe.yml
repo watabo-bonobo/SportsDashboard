@@ -26,23 +26,18 @@ jobs:
           show() { python3 -c "
           h=open('out/$1.c').read(); kw='$2'; i=h.find(kw); print('kw',kw,h.count(kw),i); print(h[max(0,i-$3):i+$4] if i>=0 else h[:$4])"; }
           links() { grep -o "href=\"[^\"]*\"" "out/$1" | sort -u | grep -i "$2" | head -60 | tr '\n' ' '; echo; }
-          get j1s https://www.jleague.jp/j1/standings/
-          python3 - <<'PY'
-          import re
-          h=open('out/j1s.c').read()
-          print('tables', h.count('<table'), 'rows', h.count('o-table__row'), 'hidden S:', h.count('hidden id="S:'))
-          print(re.findall(r'<h[1-4][^>]*>(.{0,120}?)</h[1-4]>', h)[:30])
-          print(re.findall(r'o-table__club-link" href="([^"]+)"', h)[:60])
-          PY
-          get lhs https://leagueh.jp/schedule/
-          show lhs '2026' 300 5000
-          get lhm https://leagueh.jp/schedule/511M01/
-          show lhm 'vs' 1500 5000
-          get lhr https://leagueh.jp/rankings/
-          show lhr '1' 0 200
+          get d17 "https://leagueh.jp/schedule/?s=2026&y=2026&m=10&d=17"
           python3 -c "
-          h=open('out/lhr.c').read(); i=h.find('<table'); print(h[i-1500:i+5000])"
-          get jha https://www.handball.jp/
-          curl -sIL -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/128 Safari/537.36" --max-time 40 https://www.handball.jp/ | head -20
-          curl -sIL --max-time 40 http://handball.jp/ | head -10
+          import re; h=open('out/d17.c').read(); i=h.find('game-list'); print(re.findall(r'div_day[^\"]*\" id=\"div_day_\d+', h)); print(h[i:i+2500])"
+          get nov "https://leagueh.jp/schedule/?s=2026&y=2026&m=11&n=next"
+          python3 -c "
+          import re; h=open('out/nov.c').read(); print(re.findall(r'id=\"div_day_\d+', h)); print(re.findall(r'schedule/(\w+)/', h)[:20])"
+          get old "https://leagueh.jp/schedule/?s=2025&y=2026&m=3&d=1"
+          python3 -c "
+          import re; h=open('out/old.c').read(); i=h.find('game-list'); print(re.findall(r'id=\"div_day_\d+', h)); print(h[i:i+3000])"
+          get lhr2 "https://leagueh.jp/rankings/?s=2025"
+          python3 -c "
+          h=open('out/lhr2.c').read(); i=h.find('</header>'); print(h[i:i+4000])"
+          get jor http://handball.or.jp/
+          links jor 'national\|japan\|schedule\|game\|match\|taikai\|日本代表'
           exit 0

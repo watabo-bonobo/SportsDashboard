@@ -672,15 +672,22 @@ h1 {
   .stat-value {
     white-space: nowrap;
   }
+  /* 競技が7つあるので、スマホでは4列×2段に並べる */
   .segmented {
-    display: flex;
-    flex-wrap: nowrap;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     width: 100%;
   }
   .segmented button {
-    flex: 1 1 auto;
-    padding: 0 6px;
+    padding: 0 4px;
     white-space: nowrap;
+    border-bottom: 1px solid var(--line);
+  }
+  .segmented button:nth-child(4n) {
+    border-right: 0;
+  }
+  .segmented button:nth-child(n + 5) {
+    border-bottom: 0;
   }
   .freshness {
     gap: 4px 16px;

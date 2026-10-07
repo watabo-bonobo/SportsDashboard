@@ -111,7 +111,7 @@ export default function App() {
       <header className="header">
         <div className="title">
           <h1>スポーツ観戦ダッシュボード</h1>
-          <p className="lead">日本代表・Jリーグ・プロ野球・メジャー・バレー・バスケ・ハンドボール・卓球の予定、放送・配信、結果をまとめて確認できます。</p>
+          <p className="lead">応援している競技の予定、放送・配信、結果、順位をまとめて確認できます。</p>
         </div>
         <div className="freshness">
           <p>

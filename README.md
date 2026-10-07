@@ -8,7 +8,7 @@
 - 右: 直近30日の結果
 - 競技での絞り込み、「日本代表・注目のみ」表示（設定はブラウザに保存）
 - 各試合から Google カレンダーに追加、情報の出典へのリンク
-- 「更新」ボタンでページを開いたまま最新の `events.json` を取り直す
+- 「更新」ボタンでページを開いたまま最新のデータを取り直す（データは1時間ごとに自動収集）
 
 公開URL（GitHub Pages）: https://watabo-bonobo.github.io/SportsDashboard/
 
@@ -23,9 +23,26 @@ npm run build    # dist/ に静的ファイルを出力
 
 `?now=2026-10-07` を URL に付けると「今日」を差し替えて表示を確認できます。
 
-## データの更新
+## データの集め方
 
-データは `public/data/events.json` の1ファイルです。ビルドし直さなくても、このファイルを差し替えるだけで画面に反映されます。
+GitHub Actions（`.github/workflows/deploy.yml`）が **1時間ごと** に各サイトの公開ページを読み取り、
+前回のデータに重ねてから GitHub Pages に公開します。サイトを開いたときと「更新」ボタンを押したときは、
+その時点で公開されている最新のデータを読み込みます。
+
+| 収集元 | 取れる情報 | 処理 |
+| --- | --- | --- |
+| JFA「SAMURAI BLUE 日程・結果」 | 日本代表の日程・対戦相手・会場・結果 | `collector/sources/jfa-samuraiblue.js` |
+| Ｊリーグ公式「今週の日程・結果」 | J1・ルヴァンカップ・天皇杯の時刻・会場・放送局・結果 | `collector/sources/jleague.js` |
+| テレ東卓球「大会日程」 | WTT・ITTF の大会と期間 | `collector/sources/tvtokyo-tabletennis.js` |
+
+自動で取れない情報（バスケ・バレー日本代表、代表戦の放送局など）は `public/data/events.json` に手で書きます。
+収集した情報と同じ試合があれば、手入力の放送局や時刻は残したまま、結果などが上書きされます。
+過去60日より前の試合は自動で消えます。
+
+各サイトのページの作りが変わると、そのサイトの分だけ収集が止まります（他のサイトと前回データはそのまま表示されます）。
+ローカルでの試し方: `node collector/collect.js "" public/data/events.json /tmp/out.json`
+
+### 手入力データの形式
 
 ```jsonc
 {
@@ -42,22 +59,15 @@ npm run build    # dist/ に静的ファイルを出力
     { "name": "テレビ朝日系", "kind": "tv" },  // tv=地上波 / bs=BS・CS / net=配信
     { "name": "U-NEXT", "kind": "net", "url": "https://video.unext.jp/", "note": "補足" }
   ],
-  "result": { "home": 2, "away": 1, "note": "PK 5-4" }, // 試合後に追加
+  "result": { "home": 2, "away": 1, "note": "PK 5-4" },
   "featured": true,                     // 日本代表など。上段カードと強調表示の対象
   "source": "https://..."               // 出典
 }
 ```
 
-`npm test` で必須項目や日付形式の誤りを検出できます。
-
-### データソースについて
-
-J リーグ・JFA・JBA・JVA・WTT などの公式サイトには、誰でも使える公開 API がありません。
-また各サイトの HTML を自動取得（スクレイピング）する方式は、利用規約上の問題やページ構造の変更で壊れやすいため採用していません。
-そのため、公式発表・報道をもとに `events.json` を手で（または Claude などに頼んで）更新する方式にしています。
-同梱のデータは 2026-10-07 時点で各出典から集めたもので、放送・配信予定は変更される可能性があります。
+`npm test` で必須項目や日付形式の誤り、収集処理の動作を確認できます。
 
 ## 公開（GitHub Pages）
 
-`main` に push すると `.github/workflows/deploy.yml` が GitHub Pages にデプロイします。
+`main` への push 時と1時間ごとに `.github/workflows/deploy.yml` が収集とデプロイを行います。
 初回のみリポジトリの Settings → Pages → Source を「GitHub Actions」にしてください。

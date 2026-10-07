@@ -54,6 +54,18 @@ export function parsePlatforms(text) {
     .map((name) => ({ name, kind: NET.test(name) ? 'net' : BS.test(name) ? 'bs' : 'tv' }));
 }
 
+/** "3PK4" → "PK 3-4"、"延長" はそのまま。同じ表記が重複していても1つにまとめる */
+export function parsePenaltyNote(text) {
+  let t = text.replace(/\s+/g, '');
+  if (!t) return '';
+  // 表示用に同じ文字列が2回入っていることがある
+  if (t.length % 2 === 0 && t.slice(0, t.length / 2) === t.slice(t.length / 2)) t = t.slice(0, t.length / 2);
+  const pk = t.match(/(\d+)PK(\d+)/);
+  if (pk) return `PK ${pk[1]}-${pk[2]}`;
+  if (t.includes('延長')) return '延長';
+  return t;
+}
+
 export function parse(html, url) {
   const $ = resolveStreamedHtml(cheerio.load(html));
   const events = [];
@@ -79,7 +91,7 @@ export function parse(html, url) {
     const over = box.hasClass('m-schedule--game-over') || box.find('.m-schedule__game-over-text').length > 0;
     const stadium = box.find('.m-schedule__info-stadium').eq(1).text().trim() || box.find('.m-schedule__info-stadium').first().text().trim();
     const platform = box.find('.m-schedule__info--hidden .m-schedule__info-platform').first().text().trim();
-    const pk = box.find('.m-schedule__penalty').text().replace(/\s+/g, '');
+    const pk = parsePenaltyNote(box.find('.m-schedule__penalty').first().text());
 
     const ev = {
       id: `jl-${m[1]}-${id}`,

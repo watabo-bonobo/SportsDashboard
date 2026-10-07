@@ -117,3 +117,25 @@ describe('mergeEvents', () => {
     expect(pruneOld(seed, new Date('2026-12-15T00:00:00Z')).map((e) => e.id)).toEqual(['samurai-20261114']);
   });
 });
+
+describe('Ｊリーグ PK・延長表記', () => {
+  it('重複した表記をまとめる', () => {
+    expect(jleague.parsePenaltyNote('3PK4 3PK4')).toBe('PK 3-4');
+    expect(jleague.parsePenaltyNote('延長延長')).toBe('延長');
+    expect(jleague.parsePenaltyNote('')).toBe('');
+  });
+});
+
+describe('JVA', () => {
+  it('試合・大会だけを取り込む', async () => {
+    const jva = await import('./sources/jva.js');
+    const html = `<dl class="m-scheduleTreeColumn"><dt>5/11-6/6</dt><dd class="m-scheduleTreeColumn-name">第1回国内合宿＊1</dd><dd class="m-scheduleTreeColumn-place">味の素トレセン</dd></dl>
+      <dl class="m-scheduleTreeColumn"><dt>7/13-7/19</dt><dd class="m-scheduleTreeColumn-name">バレーボールネーションズリーグ2026 第3週</dd><dd class="m-scheduleTreeColumn-place">Asueアリーナ大阪（大阪市）</dd></dl>
+      <dl class="m-scheduleTreeColumn"><dt>7/10</dt><dd class="m-scheduleTreeColumn-name">2026バレーボール男子日本代表 国際親善試合（沖縄大会）</dd><dd class="m-scheduleTreeColumn-place">沖縄サントリーアリーナ</dd></dl>`;
+    const events = jva.parse(html, 'https://www.jva.or.jp/national_team/2026/men_schedule/');
+    expect(events.map((e) => [e.title, e.start, e.end])).toEqual([
+      ['バレーボールネーションズリーグ2026 第3週（男子）', '2026-07-13', '2026-07-19'],
+      ['2026バレーボール男子日本代表 国際親善試合（沖縄大会）', '2026-07-10', undefined],
+    ]);
+  });
+});

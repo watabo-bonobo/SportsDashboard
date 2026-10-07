@@ -5,7 +5,9 @@ export const name = 'SAMURAI BLUE（JFA）';
 
 export function urls(now) {
   const y = Number(now.toISOString().slice(0, 4));
-  return [y, y + 1].map((year) => `https://www.jfa.jp/samuraiblue/schedule_result/${year}.html`);
+  // 翌年分のページは年末にならないと公開されないので、12月だけ見に行く
+  const years = now.getUTCMonth() === 11 ? [y, y + 1] : [y];
+  return years.map((year) => `https://www.jfa.jp/samuraiblue/schedule_result/${year}.html`);
 }
 
 /** "10/1(木)" や "2027/1/11(月)" → "YYYY-MM-DD" */

@@ -1,11 +1,13 @@
 import type { Broadcast, Sport, SportEvent, Standings } from './types';
+import type { Side } from './schedule';
 import {
   eventTitle,
   formatDate,
   formatPeriod,
   formatTime,
   googleCalendarUrl,
-  japanOutcome,
+  JAPAN,
+  sideOutcome,
   relativeDay,
   SPORT_LABEL,
   startDateKey,
@@ -54,7 +56,7 @@ function Links({ event }: { event: SportEvent }) {
   );
 }
 
-export function SummaryBar({ summary }: { summary: Summary }) {
+export function SummaryBar({ summary, side = JAPAN }: { summary: Summary; side?: Side }) {
   const { win, draw, loss } = summary.record;
   const items = [
     { label: '今日の試合・大会', value: summary.today, unit: '件' },
@@ -73,7 +75,7 @@ export function SummaryBar({ summary }: { summary: Summary }) {
         </div>
       ))}
       <div className="stat">
-        <p className="stat-label">日本代表 直近30日の成績</p>
+        <p className="stat-label">{side === JAPAN ? '日本代表' : side.label} 直近30日の成績</p>
         <p className="stat-value">
           {win}
           <span className="stat-unit">勝</span>
@@ -111,9 +113,9 @@ export function EventRow({ event }: { event: SportEvent }) {
   );
 }
 
-export function ResultRow({ event, now }: { event: SportEvent; now: Date }) {
+export function ResultRow({ event, now, side = JAPAN }: { event: SportEvent; now: Date; side?: Side }) {
   const r = event.result;
-  const outcome = japanOutcome(event);
+  const outcome = sideOutcome(event, side);
   const endKey = event.end ?? startDateKey(event);
   return (
     <article className={`result${event.featured ? ' is-featured' : ''}`}>
@@ -138,7 +140,7 @@ export function ResultRow({ event, now }: { event: SportEvent; now: Date }) {
       )}
       {event.note && <p className="note">{event.note}</p>}
       <div className="result-foot">
-        {outcome && <span className={`outcome outcome-${outcome}`}>日本 {OUTCOME_LABEL[outcome]}</span>}
+        {outcome && <span className={`outcome outcome-${outcome}`}>{side.label} {OUTCOME_LABEL[outcome]}</span>}
         {r?.note && <span>{r.note}</span>}
         {!r && <span className="muted">{event.home ? '結果は未反映です' : '大会終了'}</span>}
         {event.source && (
@@ -180,7 +182,7 @@ export function FeaturedCard({ event, now }: { event: SportEvent; now: Date }) {
   );
 }
 
-export function StandingsTable({ table }: { table: Standings }) {
+export function StandingsTable({ table, side }: { table: Standings; side?: Side }) {
   const soccer = table.rows.some((r) => r.points !== undefined);
   return (
     <section className="standings" aria-label={`${table.title} 順位表`}>
@@ -216,7 +218,7 @@ export function StandingsTable({ table }: { table: Standings }) {
         </thead>
         <tbody>
           {table.rows.map((r) => (
-            <tr key={r.team} className={r.note ? 'is-featured' : undefined}>
+            <tr key={r.team} className={r.note || side?.is(r.team) ? 'is-featured' : undefined}>
               <td>{r.rank}</td>
               <th scope="row" className="team-col">
                 {r.team}

@@ -1,13 +1,25 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { EventData, Sport } from './types';
-import { buildBoard, buildSummary, formatClock, formatDate, jstDateKey, relativeDay, SPORT_LABEL } from './schedule';
+import {
+  buildBoard,
+  buildSummary,
+  formatClock,
+  formatDate,
+  isKashimaEvent,
+  jstDateKey,
+  JAPAN,
+  KASHIMA,
+  relativeDay,
+  SPORT_LABEL,
+} from './schedule';
 import { validateEventData } from './validate';
 import { EventRow, FeaturedCard, ResultRow, StandingsTable, SummaryBar } from './components';
 
-const SPORTS: Sport[] = ['soccer', 'baseball', 'volleyball', 'basketball', 'handball', 'tabletennis'];
+// 絞り込みボタンの並び（鹿島はサッカーの中のチーム絞り込み）
+const FILTER_ORDER: SportFilter[] = ['all', 'baseball', 'soccer', 'kashima', 'handball', 'basketball', 'volleyball', 'tabletennis'];
 const PREFS_KEY = 'sports-dashboard:prefs';
 
-type SportFilter = Sport | 'all';
+type SportFilter = Sport | 'all' | 'kashima';
 
 interface Prefs {
   sport: SportFilter;
@@ -21,7 +33,7 @@ function loadPrefs(): Prefs {
     const raw = localStorage.getItem(PREFS_KEY);
     if (raw) {
       const saved = JSON.parse(raw) as Partial<Prefs>;
-      const sport = saved.sport && (saved.sport === 'all' || SPORTS.includes(saved.sport)) ? saved.sport : 'all';
+      const sport = saved.sport && FILTER_ORDER.includes(saved.sport) ? saved.sport : 'all';
       return { sport, featuredOnly: Boolean(saved.featuredOnly) };
     }
   } catch {
@@ -91,22 +103,39 @@ export default function App() {
 
   const visible = useMemo(() => {
     if (!data) return null;
+    if (prefs.sport === 'kashima') {
+      // 鹿島の試合だけを出す（「日本代表・注目のみ」の切り替えは関係させない）
+      return data.events.filter(isKashimaEvent);
+    }
     return data.events.filter(
       (e) => (prefs.sport === 'all' || e.sport === prefs.sport) && (!prefs.featuredOnly || e.featured),
     );
   }, [data, prefs]);
+  const side = prefs.sport === 'kashima' ? KASHIMA : JAPAN;
   const standings = useMemo(
-    () => (data?.standings ?? []).filter((t) => prefs.sport === 'all' || t.sport === prefs.sport),
+    () =>
+      (data?.standings ?? []).filter((t) =>
+        prefs.sport === 'kashima' ? t.rows.some((r) => KASHIMA.is(r.team)) : prefs.sport === 'all' || t.sport === prefs.sport,
+      ),
     [data, prefs.sport],
   );
-  const board = useMemo(() => (visible ? buildBoard(visible, now) : null), [visible, now]);
-  const summary = useMemo(() => (visible ? buildSummary(visible, now) : null), [visible, now]);
+  const board = useMemo(() => {
+    if (!visible) return null;
+    const b = buildBoard(visible, now);
+    // 鹿島で絞り込んだときは、次の鹿島の試合を「注目」に出す
+    if (prefs.sport === 'kashima') {
+      const next = b.ongoing[0] ?? b.upcoming[0]?.events[0];
+      return { ...b, nextFeatured: next ? [next] : [] };
+    }
+    return b;
+  }, [visible, now, prefs.sport]);
+  const summary = useMemo(() => (visible ? buildSummary(visible, now, side) : null), [visible, now, side]);
 
   const today = jstDateKey(now);
-  const filters: { key: SportFilter; label: string }[] = [
-    { key: 'all', label: 'すべて' },
-    ...SPORTS.map((sp) => ({ key: sp, label: SPORT_LABEL[sp] })),
-  ];
+  const filters = FILTER_ORDER.map((key) => ({
+    key,
+    label: key === 'all' ? 'すべて' : key === 'kashima' ? KASHIMA.label : SPORT_LABEL[key],
+  }));
 
   return (
     <div className="app">
@@ -159,6 +188,7 @@ export default function App() {
           <input
             type="checkbox"
             checked={prefs.featuredOnly}
+            disabled={prefs.sport === 'kashima'}
             onChange={(e) => setPrefs((p) => ({ ...p, featuredOnly: e.target.checked }))}
           />
           日本代表・注目のみ表示
@@ -170,7 +200,7 @@ export default function App() {
 
       {board && summary && (
         <>
-          <SummaryBar summary={summary} />
+          <SummaryBar summary={summary} side={side} />
           <nav className="views" aria-label="表示する一覧">
             {(
               [
@@ -263,14 +293,14 @@ export default function App() {
                     <p className="panel-note">直近30日</p>
                     {board.results.length === 0 && <p className="empty">直近30日の結果はありません</p>}
                     {board.results.map((e) => (
-                      <ResultRow key={e.id} event={e} now={now} />
+                      <ResultRow key={e.id} event={e} now={now} side={side} />
                     ))}
                   </>
                 ) : (
                   <>
                     {standings.length === 0 && <p className="empty">この競技の順位表はありません</p>}
                     {standings.map((t) => (
-                      <StandingsTable key={t.id} table={t} />
+                      <StandingsTable key={t.id} table={t} side={side === KASHIMA ? side : undefined} />
                     ))}
                   </>
                 )}

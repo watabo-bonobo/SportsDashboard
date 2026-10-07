@@ -10,28 +10,37 @@ jobs:
       - name: fetch
         run: |
           mkdir out
+          cat > probe.py <<'PY'
+          import sys, re
+          html = open(sys.argv[1], encoding='utf-8', errors='replace').read()
+          kw, n = sys.argv[2], int(sys.argv[3])
+          print('next_data' , '__NEXT_DATA__' in html, 'next_f', html.count('self.__next_f'), 'ld+json', html.count('ld+json'))
+          h = re.sub(r'<(script|style|svg|noscript)[^>]*>.*?</\1>', '', html, flags=re.S)
+          h = re.sub(r'<(img|link|meta)[^>]*>', '', h)
+          h = re.sub(r'\s(style|role|aria-[a-z]+|data-[a-z-]+|srcSet|src|loading|width|height|decoding|target|rel)="[^"]*"', '', h)
+          h = re.sub(r'\s+', ' ', h)
+          i = h.find(kw)
+          print('kw', kw, h.count(kw), i)
+          if i >= 0: print(h[max(0, i - n // 3): i + n])
+          PY
           i=0
-          while read -r kw url; do
+          while read -r kw n url; do
             i=$((i+1))
             code=$(curl -sL -A "Mozilla/5.0 (compatible; SportsDashboard)" -o out/$i.html -w "%{http_code}" --max-time 30 "$url")
             echo "=== $i $code $(wc -c < out/$i.html) $url"
-            python3 - "out/$i.html" "$kw" <<'PY'
-          import sys, re
-          html = open(sys.argv[1], encoding='utf-8', errors='replace').read()
-          kw = sys.argv[2]
-          idx = html.find(kw)
-          print('title:', re.search(r'<title>(.*?)</title>', html, re.S).group(1).strip() if '<title>' in html else None)
-          print('kw', kw, 'count', html.count(kw), 'first', idx)
-          if idx >= 0:
-              print(html[max(0, idx-2500):idx+2500])
-          PY
+            python3 probe.py out/$i.html "$kw" "$n"
           done <<'URLS'
-          キリン https://www.jfa.jp/samuraiblue/schedule_result/2026.html
-          DAZN https://www.jleague.jp/match/search/?category%5B%5D=j1&year=2026&month=10
-          DAZN https://www.jleague.jp/match/search/?category%5B%5D=leaguecup&year=2026&month=10
-          天皇杯 https://www.jfa.jp/match/emperorscup_2026/schedule_result/
-          Window https://www.japanbasketball.jp/japan/schedule
-          日本 https://www.jva.or.jp/national_team/2026/men_schedule/
-          WTT https://www.tv-tokyo.co.jp/tabletennis/
-          4633 https://www.thesportsdb.com/api/v1/json/123/eventsnextleague.php?id=4633
+          ニュージーランド 3500 https://www.jfa.jp/samuraiblue/schedule_result/2026.html
+          ガンバ大阪 4000 https://www.jleague.jp/match/search/?category%5B%5D=j1&year=2026&month=10
+          準々決勝 2500 https://www.jfa.jp/match/emperorscup_2026/schedule_result/
+          チャイナスマッシュ 2500 https://www.tv-tokyo.co.jp/tabletennis/
           URLS
+          echo "=== jleague json chunk"
+          python3 - <<'PY'
+          import re
+          html = open('out/2.html', encoding='utf-8').read()
+          for m in re.finditer(r'self\.__next_f\.push\(\[1,"(.*?)"\]\)', html, re.S):
+              s = m.group(1)
+              if 'ガンバ大阪' in s and ('DAZN' in s or 'dazn' in s):
+                  i = s.find('ガンバ大阪'); print(s[max(0,i-1500):i+2500]); break
+          PY

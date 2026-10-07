@@ -1,0 +1,688 @@
+{
+  "updatedAt": "2026-10-07",
+  "events": [
+    {
+      "id": "samurai-20261001",
+      "sport": "soccer",
+      "competition": "キリンカップサッカー2026",
+      "round": "1回戦",
+      "home": "日本",
+      "away": "エクアドル",
+      "start": "2026-10-01T19:10:00+09:00",
+      "venue": "日産スタジアム",
+      "broadcasts": [
+        {
+          "name": "TBS系",
+          "kind": "tv"
+        },
+        {
+          "name": "TVer",
+          "kind": "net",
+          "url": "https://tver.jp/"
+        }
+      ],
+      "result": {
+        "home": 0,
+        "away": 0,
+        "note": "PK 5-4 で日本が勝利"
+      },
+      "featured": true,
+      "source": "https://www.footballchannel.jp/2026/10/01/post1023117/"
+    },
+    {
+      "id": "samurai-20261005",
+      "sport": "soccer",
+      "competition": "キリンカップサッカー2026",
+      "round": "決勝",
+      "home": "日本",
+      "away": "ニュージーランド",
+      "start": "2026-10-05",
+      "venue": "MUFGスタジアム（国立競技場）",
+      "result": {
+        "home": 2,
+        "away": 1,
+        "note": "15年ぶり12度目の優勝"
+      },
+      "featured": true,
+      "source": "https://www.footballchannel.jp/2026/10/05/post1027173/"
+    },
+    {
+      "id": "samurai-20261114",
+      "sport": "soccer",
+      "competition": "KALLANG FOOTBALL SERIES SINGAPORE",
+      "home": "日本",
+      "away": "ブラジル",
+      "start": "2026-11-14T19:15:00+09:00",
+      "venue": "シンガポール・ナショナルスタジアム",
+      "broadcasts": [
+        {
+          "name": "テレビ朝日系",
+          "kind": "tv",
+          "note": "18:30〜生中継"
+        },
+        {
+          "name": "U-NEXT",
+          "kind": "net",
+          "url": "https://video.unext.jp/"
+        }
+      ],
+      "featured": true,
+      "source": "https://www.soccer-king.jp/news/japan/national/20260918/2206292.html"
+    },
+    {
+      "id": "samurai-20261117",
+      "sport": "soccer",
+      "competition": "KALLANG FOOTBALL SERIES SINGAPORE",
+      "home": "日本",
+      "away": "パラグアイ",
+      "start": "2026-11-17T21:10:00+09:00",
+      "venue": "シンガポール・ナショナルスタジアム",
+      "broadcasts": [
+        {
+          "name": "日本テレビ系",
+          "kind": "tv"
+        },
+        {
+          "name": "TVer",
+          "kind": "net",
+          "url": "https://tver.jp/"
+        },
+        {
+          "name": "U-NEXT",
+          "kind": "net",
+          "url": "https://video.unext.jp/"
+        }
+      ],
+      "featured": true,
+      "source": "https://www.jfa.jp/news/00036769/"
+    },
+    {
+      "id": "j1-2627-09-01",
+      "sport": "soccer",
+      "competition": "明治安田J1リーグ",
+      "round": "第9節",
+      "home": "鹿島アントラーズ",
+      "away": "ガンバ大阪",
+      "start": "2026-10-09T19:00:00+09:00",
+      "broadcasts": [
+        {
+          "name": "DAZN",
+          "kind": "net",
+          "url": "https://www.dazn.com/ja-JP/"
+        }
+      ],
+      "source": "https://www.jleague.jp/j1/match/search-list/?startdate=2026-10-09&enddate=2026-10-11&period=custom",
+      "venue": "メルカリスタジアム"
+    },
+    {
+      "id": "j1-2627-09-02",
+      "sport": "soccer",
+      "competition": "明治安田J1リーグ",
+      "round": "第9節",
+      "home": "柏レイソル",
+      "away": "ヴィッセル神戸",
+      "start": "2026-10-09T19:00:00+09:00",
+      "broadcasts": [
+        {
+          "name": "DAZN",
+          "kind": "net",
+          "url": "https://www.dazn.com/ja-JP/"
+        }
+      ],
+      "source": "https://www.jleague.jp/j1/match/search-list/?startdate=2026-10-09&enddate=2026-10-11&period=custom",
+      "venue": "三協フロンテア柏スタジアム"
+    },
+    {
+      "id": "j1-2627-09-03",
+      "sport": "soccer",
+      "competition": "明治安田J1リーグ",
+      "round": "第9節",
+      "home": "セレッソ大阪",
+      "away": "横浜F・マリノス",
+      "start": "2026-10-10T14:00:00+09:00",
+      "broadcasts": [
+        {
+          "name": "DAZN",
+          "kind": "net",
+          "url": "https://www.dazn.com/ja-JP/"
+        }
+      ],
+      "source": "https://www.jleague.jp/j1/match/search-list/?startdate=2026-10-09&enddate=2026-10-11&period=custom",
+      "venue": "YANMAR HANASAKA STADIUM"
+    },
+    {
+      "id": "j1-2627-09-04",
+      "sport": "soccer",
+      "competition": "明治安田J1リーグ",
+      "round": "第9節",
+      "home": "FC東京",
+      "away": "浦和レッズ",
+      "start": "2026-10-10T15:00:00+09:00",
+      "broadcasts": [
+        {
+          "name": "DAZN",
+          "kind": "net",
+          "url": "https://www.dazn.com/ja-JP/"
+        }
+      ],
+      "source": "https://www.jleague.jp/j1/match/search-list/?startdate=2026-10-09&enddate=2026-10-11&period=custom",
+      "venue": "味の素スタジアム"
+    },
+    {
+      "id": "j1-2627-09-05",
+      "sport": "soccer",
+      "competition": "明治安田J1リーグ",
+      "round": "第9節",
+      "home": "アビスパ福岡",
+      "away": "ファジアーノ岡山",
+      "start": "2026-10-10T15:00:00+09:00",
+      "broadcasts": [
+        {
+          "name": "DAZN",
+          "kind": "net",
+          "url": "https://www.dazn.com/ja-JP/"
+        }
+      ],
+      "source": "https://www.jleague.jp/j1/match/search-list/?startdate=2026-10-09&enddate=2026-10-11&period=custom",
+      "venue": "ベスト電器スタジアム"
+    },
+    {
+      "id": "j1-2627-09-06",
+      "sport": "soccer",
+      "competition": "明治安田J1リーグ",
+      "round": "第9節",
+      "home": "京都サンガF.C.",
+      "away": "FC町田ゼルビア",
+      "start": "2026-10-10T19:00:00+09:00",
+      "broadcasts": [
+        {
+          "name": "DAZN",
+          "kind": "net",
+          "url": "https://www.dazn.com/ja-JP/"
+        }
+      ],
+      "source": "https://www.jleague.jp/j1/match/search-list/?startdate=2026-10-09&enddate=2026-10-11&period=custom",
+      "venue": "サンガスタジアム by KYOCERA"
+    },
+    {
+      "id": "j1-2627-09-07",
+      "sport": "soccer",
+      "competition": "明治安田J1リーグ",
+      "round": "第9節",
+      "home": "ジェフユナイテッド千葉",
+      "away": "V・ファーレン長崎",
+      "start": "2026-10-11T14:00:00+09:00",
+      "broadcasts": [
+        {
+          "name": "DAZN",
+          "kind": "net",
+          "url": "https://www.dazn.com/ja-JP/"
+        }
+      ],
+      "source": "https://www.jleague.jp/j1/match/search-list/?startdate=2026-10-09&enddate=2026-10-11&period=custom",
+      "venue": "フクダ電子アリーナ"
+    },
+    {
+      "id": "j1-2627-09-08",
+      "sport": "soccer",
+      "competition": "明治安田J1リーグ",
+      "round": "第9節",
+      "home": "水戸ホーリーホック",
+      "away": "清水エスパルス",
+      "start": "2026-10-11T15:00:00+09:00",
+      "broadcasts": [
+        {
+          "name": "DAZN",
+          "kind": "net",
+          "url": "https://www.dazn.com/ja-JP/"
+        }
+      ],
+      "source": "https://www.jleague.jp/j1/match/search-list/?startdate=2026-10-09&enddate=2026-10-11&period=custom",
+      "venue": "ケーズデンキスタジアム水戸"
+    },
+    {
+      "id": "j1-2627-09-09",
+      "sport": "soccer",
+      "competition": "明治安田J1リーグ",
+      "round": "第9節",
+      "home": "東京ヴェルディ",
+      "away": "サンフレッチェ広島",
+      "start": "2026-10-11T15:00:00+09:00",
+      "broadcasts": [
+        {
+          "name": "DAZN",
+          "kind": "net",
+          "url": "https://www.dazn.com/ja-JP/"
+        }
+      ],
+      "source": "https://www.jleague.jp/j1/match/search-list/?startdate=2026-10-09&enddate=2026-10-11&period=custom",
+      "venue": "味の素スタジアム"
+    },
+    {
+      "id": "j1-2627-09-10",
+      "sport": "soccer",
+      "competition": "明治安田J1リーグ",
+      "round": "第9節",
+      "home": "川崎フロンターレ",
+      "away": "名古屋グランパス",
+      "start": "2026-10-11T16:00:00+09:00",
+      "broadcasts": [
+        {
+          "name": "DAZN",
+          "kind": "net",
+          "url": "https://www.dazn.com/ja-JP/"
+        }
+      ],
+      "source": "https://www.jleague.jp/j1/match/search-list/?startdate=2026-10-09&enddate=2026-10-11&period=custom"
+    },
+    {
+      "id": "levain-2627-r3-01",
+      "sport": "soccer",
+      "competition": "ルヴァンカップ",
+      "round": "1stラウンド3回戦",
+      "home": "横浜F・マリノス",
+      "away": "清水エスパルス",
+      "start": "2026-10-14T18:30:00+09:00",
+      "broadcasts": [
+        {
+          "name": "スカパー!",
+          "kind": "bs",
+          "note": "全試合ライブ（フジテレビNEXT/TWO）"
+        },
+        {
+          "name": "FOD / スカパー!動画ストア",
+          "kind": "net"
+        }
+      ],
+      "source": "https://www.footballchannel.jp/2026/10/01/post1023981/",
+      "venue": "日産スタジアム"
+    },
+    {
+      "id": "levain-2627-r3-02",
+      "sport": "soccer",
+      "competition": "ルヴァンカップ",
+      "round": "1stラウンド3回戦",
+      "home": "松本山雅FC",
+      "away": "サンフレッチェ広島",
+      "start": "2026-10-14T19:00:00+09:00",
+      "broadcasts": [
+        {
+          "name": "スカパー!",
+          "kind": "bs",
+          "note": "全試合ライブ（フジテレビNEXT/TWO）"
+        },
+        {
+          "name": "FOD / スカパー!動画ストア",
+          "kind": "net"
+        }
+      ],
+      "source": "https://www.footballchannel.jp/2026/10/01/post1023981/",
+      "venue": "サンプロ アルウィン"
+    },
+    {
+      "id": "levain-2627-r3-03",
+      "sport": "soccer",
+      "competition": "ルヴァンカップ",
+      "round": "1stラウンド3回戦",
+      "home": "横浜FC",
+      "away": "浦和レッズ",
+      "start": "2026-10-14T19:00:00+09:00",
+      "broadcasts": [
+        {
+          "name": "スカパー!",
+          "kind": "bs",
+          "note": "全試合ライブ（フジテレビNEXT/TWO）"
+        },
+        {
+          "name": "FOD / スカパー!動画ストア",
+          "kind": "net"
+        }
+      ],
+      "source": "https://www.footballchannel.jp/2026/10/01/post1023981/",
+      "venue": "ニッパツ三ツ沢球技場"
+    },
+    {
+      "id": "levain-2627-r3-04",
+      "sport": "soccer",
+      "competition": "ルヴァンカップ",
+      "round": "1stラウンド3回戦",
+      "home": "名古屋グランパス",
+      "away": "ファジアーノ岡山",
+      "start": "2026-10-14T19:00:00+09:00",
+      "broadcasts": [
+        {
+          "name": "スカパー!",
+          "kind": "bs",
+          "note": "全試合ライブ（フジテレビNEXT/TWO）"
+        },
+        {
+          "name": "FOD / スカパー!動画ストア",
+          "kind": "net"
+        }
+      ],
+      "source": "https://www.footballchannel.jp/2026/10/01/post1023981/"
+    },
+    {
+      "id": "levain-2627-r3-05",
+      "sport": "soccer",
+      "competition": "ルヴァンカップ",
+      "round": "1stラウンド3回戦",
+      "home": "ジュビロ磐田",
+      "away": "川崎フロンターレ",
+      "start": "2026-10-14T19:00:00+09:00",
+      "broadcasts": [
+        {
+          "name": "スカパー!",
+          "kind": "bs",
+          "note": "全試合ライブ（フジテレビNEXT/TWO）"
+        },
+        {
+          "name": "FOD / スカパー!動画ストア",
+          "kind": "net"
+        }
+      ],
+      "source": "https://www.footballchannel.jp/2026/10/01/post1023981/",
+      "venue": "ヤマハスタジアム"
+    },
+    {
+      "id": "levain-2627-r3-06",
+      "sport": "soccer",
+      "competition": "ルヴァンカップ",
+      "round": "1stラウンド3回戦",
+      "home": "サガン鳥栖",
+      "away": "アビスパ福岡",
+      "start": "2026-10-14T19:00:00+09:00",
+      "broadcasts": [
+        {
+          "name": "スカパー!",
+          "kind": "bs",
+          "note": "全試合ライブ（フジテレビNEXT/TWO）"
+        },
+        {
+          "name": "FOD / スカパー!動画ストア",
+          "kind": "net"
+        }
+      ],
+      "source": "https://www.footballchannel.jp/2026/10/01/post1023981/",
+      "venue": "駅前不動産スタジアム"
+    },
+    {
+      "id": "levain-2627-r3-07",
+      "sport": "soccer",
+      "competition": "ルヴァンカップ",
+      "round": "1stラウンド3回戦",
+      "home": "ガイナーレ鳥取",
+      "away": "セレッソ大阪",
+      "start": "2026-10-14T19:00:00+09:00",
+      "broadcasts": [
+        {
+          "name": "スカパー!",
+          "kind": "bs",
+          "note": "全試合ライブ（フジテレビNEXT/TWO）"
+        },
+        {
+          "name": "FOD / スカパー!動画ストア",
+          "kind": "net"
+        }
+      ],
+      "source": "https://www.footballchannel.jp/2026/10/01/post1023981/",
+      "venue": "Axisバードスタジアム"
+    },
+    {
+      "id": "levain-2627-r3-08",
+      "sport": "soccer",
+      "competition": "ルヴァンカップ",
+      "round": "1stラウンド3回戦",
+      "home": "水戸ホーリーホック",
+      "away": "FC東京",
+      "start": "2026-10-14T19:00:00+09:00",
+      "broadcasts": [
+        {
+          "name": "スカパー!",
+          "kind": "bs",
+          "note": "全試合ライブ（フジテレビNEXT/TWO）"
+        },
+        {
+          "name": "FOD / スカパー!動画ストア",
+          "kind": "net"
+        }
+      ],
+      "source": "https://www.footballchannel.jp/2026/10/01/post1023981/",
+      "venue": "ケーズデンキスタジアム水戸"
+    },
+    {
+      "id": "emperor-106-qf",
+      "sport": "soccer",
+      "competition": "天皇杯 第106回",
+      "round": "準々決勝",
+      "title": "天皇杯 準々決勝（4試合）",
+      "start": "2026-12-23",
+      "source": "https://www.jfa.jp/match/emperorscup_2026/news/00036227/"
+    },
+    {
+      "id": "emperor-106-sf",
+      "sport": "soccer",
+      "competition": "天皇杯 第106回",
+      "round": "準決勝",
+      "title": "天皇杯 準決勝（2試合）",
+      "start": "2026-12-27",
+      "source": "https://www.jfa.jp/match/emperorscup_2026/news/00036227/"
+    },
+    {
+      "id": "emperor-106-final",
+      "sport": "soccer",
+      "competition": "天皇杯 第106回",
+      "round": "決勝",
+      "title": "天皇杯 決勝（元日決勝）",
+      "start": "2027-01-01",
+      "venue": "MUFGスタジアム（国立競技場）",
+      "source": "https://www.jfa.jp/match/emperorscup_2026/news/00036227/"
+    },
+    {
+      "id": "akatsuki-20260827",
+      "sport": "basketball",
+      "competition": "FIBAワールドカップ2027 アジア予選",
+      "round": "Window4",
+      "home": "日本",
+      "away": "サウジアラビア",
+      "start": "2026-08-27",
+      "result": {
+        "home": 106,
+        "away": 78
+      },
+      "featured": true,
+      "source": "https://fibaworldcup2027-asianqualifiers.japanbasketball.jp/"
+    },
+    {
+      "id": "akatsuki-20260831",
+      "sport": "basketball",
+      "competition": "FIBAワールドカップ2027 アジア予選",
+      "round": "Window4",
+      "home": "日本",
+      "away": "カタール",
+      "start": "2026-08-31T19:10:00+09:00",
+      "venue": "TOYOTA ARENA TOKYO",
+      "result": {
+        "home": 123,
+        "away": 70
+      },
+      "featured": true,
+      "source": "https://qna.org.qa/en/News-Area/News/2026-8/31/qatar-loses-to-japan-in-2027-fiba-basketball-world-cup-qualifiers"
+    },
+    {
+      "id": "akatsuki-20261126",
+      "sport": "basketball",
+      "competition": "FIBAワールドカップ2027 アジア予選",
+      "round": "Window5",
+      "home": "レバノン",
+      "away": "日本",
+      "start": "2026-11-26",
+      "venue": "アウェー",
+      "featured": true,
+      "source": "https://fibaworldcup2027-asianqualifiers.japanbasketball.jp/"
+    },
+    {
+      "id": "akatsuki-20261129",
+      "sport": "basketball",
+      "competition": "FIBAワールドカップ2027 アジア予選",
+      "round": "Window5",
+      "home": "カタール",
+      "away": "日本",
+      "start": "2026-11-29",
+      "venue": "アウェー",
+      "featured": true,
+      "source": "https://fibaworldcup2027-asianqualifiers.japanbasketball.jp/"
+    },
+    {
+      "id": "volley-ag-w-final",
+      "sport": "volleyball",
+      "competition": "アジア競技大会2026 女子",
+      "round": "決勝",
+      "home": "日本",
+      "away": "中国",
+      "start": "2026-09-22",
+      "result": {
+        "home": 0,
+        "away": 3,
+        "note": "銀メダル"
+      },
+      "featured": true,
+      "source": "https://www.olympics.com/ja/news/asian-games-2026-womens-volleyball-results-japan"
+    },
+    {
+      "id": "volley-ag-m-final",
+      "sport": "volleyball",
+      "competition": "アジア競技大会2026 男子",
+      "round": "決勝",
+      "home": "日本",
+      "away": "イラン",
+      "start": "2026-10-03",
+      "result": {
+        "home": 1,
+        "away": 3,
+        "note": "銀メダル"
+      },
+      "featured": true,
+      "source": "https://www.olympics.com/ja/news/asian-games-2026-mens-volleyball-results"
+    },
+    {
+      "id": "svl-w-2627-open",
+      "sport": "volleyball",
+      "competition": "SV.LEAGUE WOMEN 2026-27",
+      "round": "開幕節",
+      "title": "SV.LEAGUE WOMEN 開幕（タイ・バンコク開催）",
+      "start": "2026-10-10",
+      "end": "2026-10-11",
+      "venue": "フアマク・スタジアム（バンコク）",
+      "broadcasts": [
+        {
+          "name": "J SPORTSオンデマンド",
+          "kind": "net",
+          "url": "https://jsports.co.jp/",
+          "note": "全試合ライブ"
+        }
+      ],
+      "source": "https://sports.yahoo.co.jp/official/detail/2026070100154-spnaviow"
+    },
+    {
+      "id": "svl-2627-regular",
+      "sport": "volleyball",
+      "competition": "SV.LEAGUE 2026-27",
+      "round": "レギュラーシーズン",
+      "title": "SV.LEAGUE 国内開幕",
+      "start": "2026-10-17",
+      "broadcasts": [
+        {
+          "name": "J SPORTSオンデマンド",
+          "kind": "net",
+          "url": "https://jsports.co.jp/",
+          "note": "全試合ライブ"
+        }
+      ],
+      "source": "https://www.svleague.jp/match/overview/2026-27/sv_men.html"
+    },
+    {
+      "id": "tt-wtt-china-smash-2026",
+      "sport": "tabletennis",
+      "competition": "WTT",
+      "title": "WTT チャイナスマッシュ 2026",
+      "start": "2026-10-01",
+      "end": "2026-10-11",
+      "venue": "北京（中国）",
+      "broadcasts": [
+        {
+          "name": "U-NEXT",
+          "kind": "net",
+          "url": "https://video.unext.jp/",
+          "note": "日本人選手の注目試合を独占ライブ"
+        },
+        {
+          "name": "テレ東",
+          "kind": "tv",
+          "note": "ダイジェスト"
+        },
+        {
+          "name": "BSテレ東",
+          "kind": "bs",
+          "note": "ダイジェスト"
+        }
+      ],
+      "featured": true,
+      "source": "https://www.tv-tokyo.co.jp/tabletennis/tournament/china_smash_2026/broadcast/"
+    },
+    {
+      "id": "tt-wtt-montpellier-2026",
+      "sport": "tabletennis",
+      "competition": "WTT",
+      "title": "WTTチャンピオンズ モンペリエ 2026",
+      "start": "2026-10-27",
+      "end": "2026-11-01",
+      "venue": "モンペリエ（フランス）",
+      "broadcasts": [
+        {
+          "name": "U-NEXT",
+          "kind": "net",
+          "url": "https://video.unext.jp/",
+          "note": "2025年大会の実績。2026年は要確認"
+        },
+        {
+          "name": "テレ東卓球チャンネル（YouTube）",
+          "kind": "net",
+          "note": "2025年大会の実績"
+        }
+      ],
+      "featured": true,
+      "source": "https://www.banger.jp/news/180928/"
+    },
+    {
+      "id": "tt-wtt-frankfurt-2026",
+      "sport": "tabletennis",
+      "competition": "WTT",
+      "title": "WTTチャンピオンズ フランクフルト 2026",
+      "start": "2026-11-03",
+      "end": "2026-11-08",
+      "venue": "フランクフルト（ドイツ）",
+      "source": "https://www.banger.jp/news/180928/"
+    },
+    {
+      "id": "tt-wtt-istanbul-2026",
+      "sport": "tabletennis",
+      "competition": "WTT",
+      "title": "WTTコンテンダー イスタンブール 2026",
+      "start": "2026-11-10",
+      "end": "2026-11-15",
+      "venue": "イスタンブール（トルコ）",
+      "source": "https://www.banger.jp/news/180928/"
+    },
+    {
+      "id": "tt-wtt-muscat-2026",
+      "sport": "tabletennis",
+      "competition": "WTT",
+      "title": "WTTスターコンテンダー マスカット 2026",
+      "start": "2026-11-16",
+      "end": "2026-11-21",
+      "venue": "マスカット（オマーン）",
+      "source": "https://www.banger.jp/news/180928/"
+    }
+  ]
+}

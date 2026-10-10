@@ -11,26 +11,20 @@ jobs:
       - run: |
           set +e
           cat > probe.mjs <<'JS'
-          import { parse } from './collector/sources/jleague.js';
+          import { standings } from './collector/sources/jleague.js';
+          import { parseResults, resultsUrl } from './collector/sources/jleague-data.js';
           import * as cheerio from 'cheerio';
           const UA='Mozilla/5.0 (compatible; SportsDashboard/1.0)';
-          const f=async u=>{try{const r=await fetch(u,{headers:{'User-Agent':UA,'Accept-Language':'ja'},signal:AbortSignal.timeout(30000)});const t=await r.text();console.log('==',r.status,t.length,u);return t;}catch(e){console.log('ERR',u,e.message);return '';}};
-          for (const u of ['https://www.jleague.jp/match/section/j1/1/','https://www.jleague.jp/match/section/j1/2026/1/','https://www.jleague.jp/j1/match/section/1/','https://www.jleague.jp/club/kashima/day/?season=2026']) {
-            const t=await f(u); if(!t) continue;
-            const ev=parse(t,'https://www.jleague.jp/');
-            console.log(' events',ev.length, ev.slice(0,4).map(e=>`${e.start.slice(0,10)} ${e.home}-${e.away} ${e.result?e.result.home+'-'+e.result.away:''}`).join(' | '));
-            const links=[...new Set([...t.matchAll(/href="(\/[^"]*(section|sec)[^"]*)"/g)].map(m=>m[1]))].slice(0,15); console.log(' links',links.join(' '));
-          }
-          for (const u of ['https://data.j-league.or.jp/SFRT01/','https://data.j-league.or.jp/SFMS01/']) {
-            const t=await f(u); if(!t) continue;
-            const $=cheerio.load(t);
-            $('form').each((_,fm)=>console.log(' form',$(fm).attr('action'),$(fm).attr('method')));
-            $('select').each((_,s)=>console.log(' select',$(s).attr('name'),$(s).find('option').slice(0,6).map((_,o)=>$(o).attr('value')+'='+$(o).text().trim()).get().join(', ')));
-          }
-          const t2=await f('https://data.j-league.or.jp/SFMS01/search?competition_years=2026&competition_frame_ids=1&team_ids=9');
-          const $2=cheerio.load(t2); console.log($2('table').first().text().replace(/\s+/g,' ').slice(0,1500));
-          const t3=await f('https://data.j-league.or.jp/SFRT01/?competitionSectionIdLabel=%E7%AC%AC%EF%BC%95%E7%AF%80&competitionIdLabel=%E6%98%8E%E6%B2%BB%E5%AE%89%E7%94%B0%EF%BC%AA%EF%BC%91%E3%83%AA%E3%83%BC%E3%82%B0&yearIdLabel=2026&search=search');
-          const $3=cheerio.load(t3); console.log($3('table').first().text().replace(/\s+/g,' ').slice(0,1500));
+          const f=async u=>{const r=await fetch(u,{headers:{'User-Agent':UA,'Accept-Language':'ja'},signal:AbortSignal.timeout(30000)});const t=await r.text();console.log('==',r.status,t.length,u);return t;};
+          const html=await f(resultsUrl(new Date()));
+          const $=cheerio.load(html);
+          const trs=$('table tr'); console.log('rows',trs.length, 'tables', $('table').length);
+          console.log(trs.eq(0).toString().slice(0,1500)); console.log(trs.eq(1).toString().slice(0,2500));
+          const unplayed=trs.filter((_,t)=>!/\d+-\d+/.test($(t).text())).eq(1); console.log('UNPLAYED',unplayed.toString().slice(0,2500));
+          console.log('pager', $('.pager, .pagination, [class*=page]').first().toString().slice(0,800));
+          const ms=parseResults(html); const bySec={}; ms.forEach(m=>bySec[m.section]=(bySec[m.section]||0)+1); console.log('matches',ms.length,JSON.stringify(bySec));
+          const st=await standings(new Date(), f);
+          for (const r of st[0].rows) console.log(r.rank,r.team,r.played,(r.form||[]).map(x=>x.outcome[0]+x.score+x.opponent).join(' '),JSON.stringify(r.ranks));
           JS
           node probe.mjs
           exit 0

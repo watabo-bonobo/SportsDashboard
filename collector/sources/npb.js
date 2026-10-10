@@ -92,15 +92,62 @@ export function parseStandings(html) {
   return rows;
 }
 
+/**
+ * 各チームの直近 count 試合（古い順）の勝敗。events は月別日程から読んだ試合（結果のあるものだけを使う）。
+ * 月別日程にはクライマックスシリーズも同じ形で載るため、played（順位表の試合数）を渡すと
+ * シーズン最初からその数までの試合だけを公式戦として数える。結果の形は J1 と同じ（src/types.ts の FormResult）
+ */
+export function recentForm(events, team, count = 5, played = Infinity) {
+  return events
+    .filter((e) => e.result && (e.home === team || e.away === team))
+    .sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : 0))
+    .slice(0, played)
+    .slice(-count)
+    .map((e) => {
+      const home = e.home === team;
+      const [mine, theirs] = home ? [e.result.home, e.result.away] : [e.result.away, e.result.home];
+      return {
+        date: e.start.slice(0, 10),
+        opponent: home ? e.away : e.home,
+        home,
+        score: `${mine}-${theirs}`,
+        outcome: mine > theirs ? 'win' : mine < theirs ? 'loss' : 'draw',
+      };
+    });
+}
+
+/** シーズン（3月）から今月までの月別日程。公式戦を最初から数えるため全部読む */
+export function formUrls(now) {
+  const jst = new Date(now.getTime() + 9 * 3600000);
+  const y = jst.getUTCFullYear();
+  const last = Math.min(jst.getUTCMonth() + 1, 11);
+  const months = [];
+  for (let mm = 3; mm <= last; mm++) months.push(mm);
+  return months.map((mm) => `https://npb.jp/games/${y}/schedule_${String(mm).padStart(2, '0')}_detail.html`);
+}
+
+async function loadForm(now, fetchText) {
+  const games = [];
+  for (const url of formUrls(now)) {
+    games.push(...parse(await fetchText(url), url));
+  }
+  return games;
+}
+
 export async function standings(now, fetchText) {
   const y = new Date(now.getTime() + 9 * 3600000).getUTCFullYear();
   const out = [];
+  // 1か月でも欠けると試合数で公式戦を数えられないので、取れなければ直近5試合は付けない
+  const games = await loadForm(now, fetchText).catch(() => []);
   for (const [league, file, title] of [
     ['c', 'std_c', 'セ・リーグ'],
     ['p', 'std_p', 'パ・リーグ'],
   ]) {
     const url = `https://npb.jp/bis/${y}/stats/${file}.html`;
-    const rows = parseStandings(await fetchText(url));
+    const rows = parseStandings(await fetchText(url)).map((r) => {
+      const form = recentForm(games, r.team, 5, r.played);
+      return form.length ? { ...r, form } : r;
+    });
     if (rows.length) out.push({ id: `npb-${league}`, sport: 'baseball', title: `プロ野球 ${title}`, rows, source: url });
   }
   return out;

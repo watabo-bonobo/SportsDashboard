@@ -118,6 +118,35 @@ describe('mergeEvents', () => {
   });
 });
 
+describe('ACL', () => {
+  const group = (head, matches) => `<div class="p-game-schedule__group">
+    <div class="m-section-header"><div class="m-section-header__h2-eyebrow--logo-text-container m-section-header__h2-eyebrow--logo-text-container-pc"><span>${head}</span></div>
+    <div class="m-section-header__h2-eyebrow--logo-text-container m-section-header__h2-eyebrow--logo-text-container-sp"><span>${head}</span></div></div>
+    <div class="p-game-schedule__group-matches">${matches}</div></div>`;
+  const match = (id, cat, home, away, link = true, over = false) => `
+    <div class="m-schedule${over ? ' m-schedule--game-over' : ''}" id="${id}"><div class="m-schedule__wrapper">
+      ${link ? `<a class="m-schedule__link" href="/match/${cat}/2026/${id.slice(4)}/">` : '<div>'}
+      <div class="m-schedule__team m-schedule__team-home"><span class="m-schedule__team-name">${home}</span></div>
+      <div class="m-schedule__match-info">${over ? '<p class="m-schedule__score">2</p><p class="m-schedule__score">1</p>' : '<p class="m-schedule__time-text">19:00</p>'}</div>
+      <div class="m-schedule__team m-schedule__team-away"><span class="m-schedule__team-name">${away}</span></div>
+      <div class="m-schedule__info m-schedule__info--hidden"><p class="m-schedule__info-platform">DAZN</p></div>
+      ${link ? '</a>' : '</div>'}</div></div>`;
+  const html = `<main>
+    ${group('AFCチャンピオンズリーグElite　リーグステージ　ＭＤ1　東地区', match('2026091503', 'acle', '鹿島アントラーズ', 'ニューカッスル・ジェッツ', true, true) + match('2026091506', 'acle', '上海海港', '北京FC', false))}
+    ${group('AFCチャンピオンズリーグTwo　グループステージ　ＭＤ2　東地区', match('2026101504', 'acl2', 'ＦＣ町田ゼルビア', 'FCソウル'))}
+    </main>`;
+  const events = jleague.parse(html, 'https://www.jleague.jp/acle/match/');
+
+  it('Ｊクラブの試合だけを、大会名と節つきで読む', () => {
+    expect(events.map((e) => [e.id, e.competition, e.round, e.home, e.away])).toEqual([
+      ['jl-acle-2026091503', 'ACLエリート', 'リーグステージ MD1', '鹿島アントラーズ', 'ニューカッスル・ジェッツ'],
+      ['jl-acl2-2026101504', 'ACL Two', 'グループステージ MD2', 'ＦＣ町田ゼルビア', 'FCソウル'],
+    ]);
+    expect(events[0].result).toEqual({ home: 2, away: 1 });
+    expect(events[1].start).toBe('2026-10-15T19:00:00+09:00');
+  });
+});
+
 describe('Ｊリーグ PK・延長表記', () => {
   it('重複した表記をまとめる', () => {
     expect(jleague.parsePenaltyNote('3PK4 3PK4')).toBe('PK 3-4');

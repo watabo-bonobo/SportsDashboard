@@ -1,11 +1,64 @@
 // Ｊリーグ公式サイトの「今週の日程・結果」（J1・ルヴァンカップ・天皇杯など）と、
 // ACL（エリート・Two）の日程・結果ページ（Ｊクラブが出る試合だけに詳細リンクがある）
 import * as cheerio from 'cheerio';
+import { mergeEvent } from '../merge.js';
 
 export const name = 'Ｊリーグ公式';
 
-export function urls() {
-  return ['https://www.jleague.jp/match/', 'https://www.jleague.jp/acle/match/', 'https://www.jleague.jp/acl2/match/'];
+const BASE = 'https://www.jleague.jp';
+
+/** 今週分（J1・カップ戦）と ACL のシーズン全日程 */
+export const PAGES = [`${BASE}/match/`, `${BASE}/acle/match/`, `${BASE}/acl2/match/`];
+
+/** クラブ一覧が取れなかったときの J1 クラブ（2026-27） */
+export const J1_CLUBS = [
+  'kashima', 'mito', 'kashiwa', 'chiba', 'urawa', 'fctokyo', 'tokyov', 'machida', 'kawasakif', 'yokohamafm',
+  'shimizu', 'nagoya', 'kyoto', 'gosaka', 'cosaka', 'kobe', 'okayama', 'hiroshima', 'fukuoka', 'nagasaki',
+];
+
+/**
+ * 放送予定ページの絞り込み欄に埋め込まれた J1 クラブの一覧（{"label":"鹿島アントラーズ","value":"kashima"}）を読む。
+ * React のデータとしてエスケープされた JSON なので、引用符の前の \ を許す
+ */
+export function parseJ1Clubs(html) {
+  const group = html.match(/\\?"id\\?":\\?"j1\\?".*?\\?"options\\?":\[(.*?)\]/s);
+  if (!group) return [];
+  return [...new Set([...group[1].matchAll(/\\?"value\\?":\\?"([a-z0-9]+)\\?"/g)].map((m) => m[1]))];
+}
+
+/**
+ * 「今週の日程」には今週の試合しか載らないため、各 J1 クラブの「日程・結果」ページ（/club/{クラブ}/day/）で
+ * 数節先までの試合も集める。同じ試合はホーム・アウェー両方のページに出るので id でまとめる
+ */
+export async function collect(_now, fetchText) {
+  const byId = new Map();
+  const add = (events) => events.forEach((e) => byId.set(e.id, mergeEvent(byId.get(e.id), e)));
+  const errors = [];
+  for (const url of PAGES) {
+    try {
+      add(parse(await fetchText(url), url));
+    } catch (e) {
+      errors.push(`${url}: ${e.message}`);
+    }
+  }
+  if (errors.length === PAGES.length) throw new Error(errors.join(' / '));
+
+  let clubs = [];
+  try {
+    clubs = parseJ1Clubs(await fetchText(`${BASE}/j1/tv/search-list/?category=j1`));
+  } catch {
+    // 一覧が取れなくても、手元のクラブ一覧で続ける
+  }
+  if (clubs.length < 10) clubs = J1_CLUBS;
+  for (const club of clubs) {
+    const url = `${BASE}/club/${club}/day/`;
+    try {
+      add(parse(await fetchText(url), url));
+    } catch {
+      // 1クラブ分が取れなくても他のクラブと今週分は使う
+    }
+  }
+  return [...byId.values()];
 }
 
 /** href のカテゴリ → 大会名。ここに無いカテゴリ（J2/J3 など）は取り込まない */

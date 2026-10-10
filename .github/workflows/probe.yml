@@ -17,28 +17,14 @@ jobs:
           cat > collector/p.mjs <<'JS'
           import * as jl from './sources/jleague.js';
           const UA = 'Mozilla/5.0 (compatible; SportsDashboardBot/1.0)';
-          const urls = [
-            'https://www.jleague.jp/club/kashima/day/',
-            'https://www.jleague.jp/j1/tv/search-list/?category=j1&startdate=2026-10-01&enddate=2026-10-31&period=custom',
-            'https://www.jleague.jp/j1/tv/search-list/?category=j1&startdate=2026-10-10&enddate=2026-11-30&period=custom',
-          ];
-          for (const u of urls) {
-            const t = await (await fetch(u, { headers: { 'User-Agent': UA, 'Accept-Language': 'ja' } })).text();
-            const ev = jl.parse(t, u);
-            console.log('=====', u, t.length, 'parsed', ev.length);
-            for (const e of ev.slice(0, 40)) console.log(e.id, e.start, e.competition, e.home, 'vs', e.away, JSON.stringify(e.result ?? ''), e.venue ?? '', (e.broadcasts ?? []).map((b) => b.name).join('/'));
-            if (!ev.length) {
-              const ids = [...new Set([...t.matchAll(/id="(20\d{8})"/g)].map(m => m[1]))];
-              console.log('ids', ids.length, ids.slice(0, 30).join(','));
-              const cls = [...new Set([...t.matchAll(/class="([a-z]-[a-z-]*(tv|program|match|schedule|list)[a-z_-]*)/g)].map(m => m[1]))];
-              console.log('classes', cls.slice(0, 40).join(' '));
-              const k = [...t.matchAll(/.{0,300}長崎.{0,300}/g)].filter(m => !m[0].includes('footer')).slice(0, 2).map(m => m[0]);
-              console.log('nagasaki', k.join('\n||\n'));
-            }
-          }
-          // J1 クラブの一覧（クラブページの slug）
-          const top = await (await fetch('https://www.jleague.jp/j1/', { headers: { 'User-Agent': UA } })).text();
-          console.log('clubs', [...new Set([...top.matchAll(/href="\/club\/([a-z0-9]+)\/"/g)].map(m => m[1]))].join(','));
+          const fetchText = async (u) => { const r = await fetch(u, { headers: { 'User-Agent': UA, 'Accept-Language': 'ja' } }); if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); };
+          console.log('clubs', jl.parseJ1Clubs(await fetchText('https://www.jleague.jp/j1/tv/search-list/?category=j1')).join(','));
+          const t0 = Date.now();
+          const ev = await jl.collect(new Date(), fetchText);
+          console.log('total', ev.length, 'sec', (Date.now() - t0) / 1000);
+          const by = {}; for (const e of ev) by[e.competition] = (by[e.competition] ?? 0) + 1; console.log(JSON.stringify(by));
+          console.log('latest', ev.map((e) => e.start).sort().at(-1));
+          for (const e of ev.filter((e) => /鹿島|長崎/.test(e.home + e.away))) console.log(e.id, e.start, e.competition, e.home, 'vs', e.away, JSON.stringify(e.result ?? ''), (e.broadcasts ?? []).map((b) => b.name).join('/'));
           JS
           node collector/p.mjs
           exit 0

@@ -147,6 +147,36 @@ describe('ACL', () => {
   });
 });
 
+describe('Ｊリーグ 先の節（クラブ別日程）', () => {
+  it('J1 クラブの一覧を読み、今週分とクラブ別日程を id でまとめる', async () => {
+    const clubsJson = String.raw`{\"id\":\"j1\",\"options\":[{\"label\":\"鹿島\",\"value\":\"kashima\"},{\"label\":\"長崎\",\"value\":\"nagasaki\"}]},{\"id\":\"j2\",\"options\":[{\"value\":\"sapporo\"}]}`;
+    expect(jleague.parseJ1Clubs(clubsJson)).toEqual(['kashima', 'nagasaki']);
+
+    const box = (id, home, away, platform = '') => `<div class="m-schedule" id="${id}"><a href="/match/j1/2026/${id.slice(4)}/">
+      <div class="m-schedule__team-home"><span class="m-schedule__team-name">${home}</span></div>
+      <div class="m-schedule__match-info"><p class="m-schedule__time-text">15:00</p></div>
+      <div class="m-schedule__team-away"><span class="m-schedule__team-name">${away}</span></div>
+      ${platform ? `<div class="m-schedule__info--hidden"><p class="m-schedule__info-platform">${platform}</p></div>` : ''}</a></div>`;
+    const pages = {
+      'https://www.jleague.jp/match/': box('2026100903', '鹿島アントラーズ', 'ガンバ大阪'),
+      'https://www.jleague.jp/j1/tv/search-list/?category=j1': clubsJson,
+      'https://www.jleague.jp/club/kashima/day/': box('2026101711', '鹿島アントラーズ', 'Ｖ・ファーレン長崎', 'DAZN'),
+      'https://www.jleague.jp/club/nagasaki/day/': box('2026101711', '鹿島アントラーズ', 'Ｖ・ファーレン長崎'),
+    };
+    const fetchText = async (url) => {
+      if (!(url in pages)) throw new Error('HTTP 404');
+      return pages[url];
+    };
+    const events = await jleague.collect(NOW, fetchText);
+    expect(events.map((e) => [e.id, e.start])).toEqual([
+      ['jl-j1-2026100903', '2026-10-09T15:00:00+09:00'],
+      ['jl-j1-2026101711', '2026-10-17T15:00:00+09:00'],
+    ]);
+    // 2ページ目に放送局が無くても、先に読んだ放送局を残す
+    expect(events[1].broadcasts).toEqual([{ name: 'DAZN', kind: 'net' }]);
+  });
+});
+
 describe('Ｊリーグ PK・延長表記', () => {
   it('重複した表記をまとめる', () => {
     expect(jleague.parsePenaltyNote('3PK4 3PK4')).toBe('PK 3-4');

@@ -93,13 +93,15 @@ export function parseStandings(html) {
 }
 
 /**
- * 各チームの直近 count 試合（古い順）の勝敗。events は月別日程から読んだ試合（結果のあるものだけを使う）
- * 結果の形は J1 の順位表と同じ（src/types.ts の FormResult）
+ * 各チームの直近 count 試合（古い順）の勝敗。events は月別日程から読んだ試合（結果のあるものだけを使う）。
+ * 月別日程にはクライマックスシリーズも同じ形で載るため、played（順位表の試合数）を渡すと
+ * シーズン最初からその数までの試合だけを公式戦として数える。結果の形は J1 と同じ（src/types.ts の FormResult）
  */
-export function recentForm(events, team, count = 5) {
+export function recentForm(events, team, count = 5, played = Infinity) {
   return events
     .filter((e) => e.result && (e.home === team || e.away === team))
     .sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : 0))
+    .slice(0, played)
     .slice(-count)
     .map((e) => {
       const home = e.home === team;
@@ -114,24 +116,20 @@ export function recentForm(events, team, count = 5) {
     });
 }
 
-/** 直近の試合を数えるための月別日程。今月と先月（月初めでも5試合そろうように）。シーズンは3〜11月 */
+/** シーズン（3月）から今月までの月別日程。公式戦を最初から数えるため全部読む */
 export function formUrls(now) {
   const jst = new Date(now.getTime() + 9 * 3600000);
   const y = jst.getUTCFullYear();
-  const m = jst.getUTCMonth() + 1;
-  return [m - 1, m]
-    .filter((x) => x >= 3 && x <= 11)
-    .map((mm) => `https://npb.jp/games/${y}/schedule_${String(mm).padStart(2, '0')}_detail.html`);
+  const last = Math.min(jst.getUTCMonth() + 1, 11);
+  const months = [];
+  for (let mm = 3; mm <= last; mm++) months.push(mm);
+  return months.map((mm) => `https://npb.jp/games/${y}/schedule_${String(mm).padStart(2, '0')}_detail.html`);
 }
 
 async function loadForm(now, fetchText) {
   const games = [];
   for (const url of formUrls(now)) {
-    try {
-      games.push(...parse(await fetchText(url), url));
-    } catch {
-      // 1か月分が取れなくても、取れた分で数える
-    }
+    games.push(...parse(await fetchText(url), url));
   }
   return games;
 }
@@ -139,14 +137,15 @@ async function loadForm(now, fetchText) {
 export async function standings(now, fetchText) {
   const y = new Date(now.getTime() + 9 * 3600000).getUTCFullYear();
   const out = [];
-  const games = await loadForm(now, fetchText);
+  // 1か月でも欠けると試合数で公式戦を数えられないので、取れなければ直近5試合は付けない
+  const games = await loadForm(now, fetchText).catch(() => []);
   for (const [league, file, title] of [
     ['c', 'std_c', 'セ・リーグ'],
     ['p', 'std_p', 'パ・リーグ'],
   ]) {
     const url = `https://npb.jp/bis/${y}/stats/${file}.html`;
     const rows = parseStandings(await fetchText(url)).map((r) => {
-      const form = recentForm(games, r.team);
+      const form = recentForm(games, r.team, 5, r.played);
       return form.length ? { ...r, form } : r;
     });
     if (rows.length) out.push({ id: `npb-${league}`, sport: 'baseball', title: `プロ野球 ${title}`, rows, source: url });

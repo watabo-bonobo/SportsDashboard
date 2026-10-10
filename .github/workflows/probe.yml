@@ -11,12 +11,12 @@ jobs:
       - run: |
           set +e
           cat > probe.mjs <<'JS'
-          import * as cheerio from 'cheerio';
-          const r=await fetch('https://npb.jp/games/2026/schedule_10_detail.html',{headers:{'User-Agent':'Mozilla/5.0'}});const t=await r.text();
-          const $=cheerio.load(t);
-          const rows=$('tr[id^="date"]'); console.log('rows',rows.length);
-          rows.each((i,tr)=>{ if(i<2||i>=rows.length-8) console.log(i,$(tr).attr('id'),$(tr).find('a').attr('href'),$(tr).text().replace(/\s+/g,' ').slice(0,120)); });
-          const i=t.indexOf('id="date1010"'); console.log(t.slice(Math.max(0,i-3000),i+1500));
+          import { standings, parse, formUrls } from './collector/sources/npb.js';
+          const UA='Mozilla/5.0 (compatible; SportsDashboard/1.0)';
+          const all=[];
+          const f=async u=>{const r=await fetch(u,{headers:{'User-Agent':UA,'Accept-Language':'ja'},signal:AbortSignal.timeout(30000)});const t=await r.text();console.log('==',r.status,t.length,u);if(!r.ok)throw new Error('HTTP '+r.status);if(u.includes('schedule'))all.push(...parse(t,u));return t;};
+          const t0=Date.now(); const st=await standings(new Date(), f); console.log('ms',Date.now()-t0);
+          for (const t of st) { console.log(t.title); for (const r of t.rows) { const n=all.filter(e=>e.result&&(e.home===r.team||e.away===r.team)).length; console.log(r.rank,r.team,'played',r.played,'results',n,(r.form||[]).map(x=>x.date.slice(5)+x.outcome[0]+x.score+x.opponent).join(' ')); } }
           JS
           node probe.mjs
           exit 0

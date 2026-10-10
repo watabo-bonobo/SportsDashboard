@@ -5,6 +5,7 @@ on:
 jobs:
   probe:
     runs-on: ubuntu-latest
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -17,7 +18,7 @@ jobs:
           cat > collector/p.mjs <<'JS'
           import * as jl from './sources/jleague.js';
           const UA = 'Mozilla/5.0 (compatible; SportsDashboardBot/1.0)';
-          const fetchText = async (u) => { const r = await fetch(u, { headers: { 'User-Agent': UA, 'Accept-Language': 'ja' } }); if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); };
+          const fetchText = async (u) => { const t = Date.now(); try { const r = await fetch(u, { headers: { 'User-Agent': UA, 'Accept-Language': 'ja' }, signal: AbortSignal.timeout(30000) }); if (!r.ok) throw new Error('HTTP ' + r.status); const x = await r.text(); console.log('ok', u, x.length, Date.now() - t); return x; } catch (e) { console.log('NG', u, e.message, Date.now() - t); throw e; } };
           console.log('clubs', jl.parseJ1Clubs(await fetchText('https://www.jleague.jp/j1/tv/search-list/?category=j1')).join(','));
           const t0 = Date.now();
           const ev = await jl.collect(new Date(), fetchText);

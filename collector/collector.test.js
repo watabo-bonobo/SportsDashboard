@@ -238,6 +238,32 @@ describe('NPB', () => {
     ]);
     expect(npb.urls(new Date('2026-12-07T03:00:00Z'))).toEqual([]);
   });
+
+  it('直近の勝敗を各チームから見て数える（引き分けは分）', async () => {
+    const npb = await import('./sources/npb.js');
+    const g = (start, home, away, h, a) => ({ start, home, away, result: h === undefined ? undefined : { home: h, away: a } });
+    const games = [
+      g('2026-09-29T18:00:00+09:00', '阪神', '巨人', 3, 1),
+      g('2026-09-30T18:00:00+09:00', '巨人', '阪神', 4, 2),
+      g('2026-10-01T18:00:00+09:00', '阪神', '巨人', 2, 2),
+      g('2026-10-08T18:00:00+09:00', '巨人', 'ヤクルト'),
+    ];
+    expect(npb.recentForm(games, '巨人').map((f) => [f.date, f.opponent, f.home, f.score, f.outcome])).toEqual([
+      ['2026-09-29', '阪神', false, '1-3', 'loss'],
+      ['2026-09-30', '阪神', true, '4-2', 'win'],
+      ['2026-10-01', '阪神', false, '2-2', 'draw'],
+    ]);
+    expect(npb.recentForm(games, '阪神', 2).map((f) => f.outcome)).toEqual(['loss', 'draw']);
+  });
+
+  it('直近の試合は今月と先月の日程から数える', async () => {
+    const npb = await import('./sources/npb.js');
+    expect(npb.formUrls(new Date('2026-10-07T03:00:00Z'))).toEqual([
+      'https://npb.jp/games/2026/schedule_09_detail.html',
+      'https://npb.jp/games/2026/schedule_10_detail.html',
+    ]);
+    expect(npb.formUrls(new Date('2026-03-27T03:00:00Z'))).toEqual(['https://npb.jp/games/2026/schedule_03_detail.html']);
+  });
 });
 
 describe('MLB', () => {

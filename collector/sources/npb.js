@@ -92,15 +92,63 @@ export function parseStandings(html) {
   return rows;
 }
 
+/**
+ * 各チームの直近 count 試合（古い順）の勝敗。events は月別日程から読んだ試合（結果のあるものだけを使う）
+ * 結果の形は J1 の順位表と同じ（src/types.ts の FormResult）
+ */
+export function recentForm(events, team, count = 5) {
+  return events
+    .filter((e) => e.result && (e.home === team || e.away === team))
+    .sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : 0))
+    .slice(-count)
+    .map((e) => {
+      const home = e.home === team;
+      const [mine, theirs] = home ? [e.result.home, e.result.away] : [e.result.away, e.result.home];
+      return {
+        date: e.start.slice(0, 10),
+        opponent: home ? e.away : e.home,
+        home,
+        score: `${mine}-${theirs}`,
+        outcome: mine > theirs ? 'win' : mine < theirs ? 'loss' : 'draw',
+      };
+    });
+}
+
+/** 直近の試合を数えるための月別日程。今月と先月（月初めでも5試合そろうように）。シーズンは3〜11月 */
+export function formUrls(now) {
+  const jst = new Date(now.getTime() + 9 * 3600000);
+  const y = jst.getUTCFullYear();
+  const m = jst.getUTCMonth() + 1;
+  return [m - 1, m]
+    .filter((x) => x >= 3 && x <= 11)
+    .map((mm) => `https://npb.jp/games/${y}/schedule_${String(mm).padStart(2, '0')}_detail.html`);
+}
+
+async function loadForm(now, fetchText) {
+  const games = [];
+  for (const url of formUrls(now)) {
+    try {
+      games.push(...parse(await fetchText(url), url));
+    } catch {
+      // 1か月分が取れなくても、取れた分で数える
+    }
+  }
+  return games;
+}
+
 export async function standings(now, fetchText) {
   const y = new Date(now.getTime() + 9 * 3600000).getUTCFullYear();
   const out = [];
+  const games = await loadForm(now, fetchText);
   for (const [league, file, title] of [
     ['c', 'std_c', 'セ・リーグ'],
     ['p', 'std_p', 'パ・リーグ'],
   ]) {
     const url = `https://npb.jp/bis/${y}/stats/${file}.html`;
-    const rows = parseStandings(await fetchText(url));
+    const rows = parseStandings(await fetchText(url)).map((r) => {
+      const form = recentForm(games, r.team);
+      return form.length ? { ...r, form } : r;
+    });
     if (rows.length) out.push({ id: `npb-${league}`, sport: 'baseball', title: `プロ野球 ${title}`, rows, source: url });
   }
   return out;

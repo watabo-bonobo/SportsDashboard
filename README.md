@@ -33,6 +33,7 @@ GitHub Actions（`.github/workflows/deploy.yml`）が **1時間ごと** に各�
 | --- | --- | --- |
 | JFA「SAMURAI BLUE 日程・結果」 | 日本代表の日程・対戦相手・会場・結果 | `collector/sources/jfa-samuraiblue.js` |
 | Ｊリーグ公式「今週の日程・結果」 | J1・ルヴァンカップ・天皇杯の時刻・会場・放送局・結果 | `collector/sources/jleague.js` |
+| Ｊリーグ公式 ACL 日程・結果（`/acle/match/`・`/acl2/match/`） | ACLエリート・ACL Two のＪクラブの試合（シーズン全日程）の時刻・会場・配信・結果 | `collector/sources/jleague.js` |
 | NPB「試合日程・結果」（今月・来月） | プロ野球の日程・時刻・球場・結果 | `collector/sources/npb.js` |
 | MLB 公式データ（statsapi.mlb.com） | 日本人選手が所属するチームの試合（直近3日〜7日先）・結果。ポストシーズンは注目扱い | `collector/sources/mlb.js` |
 | 日本バレーボール協会「日本代表 日程」 | 男女日本代表の大会・期間・会場 | `collector/sources/jva.js` |

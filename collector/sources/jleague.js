@@ -13,8 +13,8 @@ export const COMPETITIONS = {
   j1: '明治安田J1リーグ',
   leaguecup: 'ルヴァンカップ',
   emperor: '天皇杯',
-  acle: 'AFCチャンピオンズリーグエリート',
-  acl2: 'AFCチャンピオンズリーグTwo',
+  acle: 'ACLエリート',
+  acl2: 'ACL Two',
 };
 
 /**

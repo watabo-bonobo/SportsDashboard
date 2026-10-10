@@ -139,8 +139,8 @@ describe('ACL', () => {
 
   it('Ｊクラブの試合だけを、大会名と節つきで読む', () => {
     expect(events.map((e) => [e.id, e.competition, e.round, e.home, e.away])).toEqual([
-      ['jl-acle-2026091503', 'AFCチャンピオンズリーグエリート', 'リーグステージ MD1', '鹿島アントラーズ', 'ニューカッスル・ジェッツ'],
-      ['jl-acl2-2026101504', 'AFCチャンピオンズリーグTwo', 'グループステージ MD2', 'ＦＣ町田ゼルビア', 'FCソウル'],
+      ['jl-acle-2026091503', 'ACLエリート', 'リーグステージ MD1', '鹿島アントラーズ', 'ニューカッスル・ジェッツ'],
+      ['jl-acl2-2026101504', 'ACL Two', 'グループステージ MD2', 'ＦＣ町田ゼルビア', 'FCソウル'],
     ]);
     expect(events[0].result).toEqual({ home: 2, away: 1 });
     expect(events[1].start).toBe('2026-10-15T19:00:00+09:00');

@@ -1,0 +1,44 @@
+name: probe-j1
+on:
+  push:
+    branches: [claude/sports-dashboard-tuyjrs]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: probe
+        run: |
+          set +e
+          cat > p.mjs <<'JS'
+          const UA = 'Mozilla/5.0 (compatible; SportsDashboardBot/1.0)';
+          const urls = [
+            'https://www.jleague.jp/j1/match/',
+            'https://www.jleague.jp/j1/match/?section=36',
+            'https://www.jleague.jp/j1/match/section/36/',
+            'https://www.jleague.jp/j1/schedule/',
+            'https://www.jleague.jp/club/kashima/day/',
+            'https://www.jleague.jp/club/kashima/schedule/',
+            'https://www.jleague.jp/match/search/?category%5B%5D=j1&year=2026&month=10',
+            'https://www.jleague.jp/j1/match/search/?year=2026&month=10',
+          ];
+          for (const u of urls) {
+            try {
+              const r = await fetch(u, { headers: { 'User-Agent': UA, 'Accept-Language': 'ja' }, signal: AbortSignal.timeout(30000) });
+              const t = await r.text();
+              console.log('=====', u, r.status, t.length, r.url);
+              const ids = [...new Set([...t.matchAll(/id="(20\d{8})"/g)].map(m => m[1]))];
+              console.log('ids', ids.join(','));
+              const hrefs = [...new Set([...t.matchAll(/href="([^"]*(section|sec=|month|day|schedule|search)[^"]*)"/g)].map(m => m[1]))];
+              console.log('hrefs', hrefs.slice(0, 60).join(' '));
+              const k = [...t.matchAll(/.{0,80}長崎.{0,80}/g)].slice(0, 3).map(m => m[0].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' '));
+              console.log('nagasaki', k.join(' || '));
+              const sec = [...new Set([...t.matchAll(/第\s*\d+\s*節[^<"]{0,20}/g)].map(m => m[0]))];
+              console.log('sections', sec.slice(0, 20).join(' / '));
+            } catch (e) { console.log('=====', u, 'ERR', e.message); }
+          }
+          JS
+          node p.mjs
+          exit 0

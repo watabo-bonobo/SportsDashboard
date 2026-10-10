@@ -1,0 +1,29 @@
+name: probe
+on: { push: { branches: [claude/sports-dashboard-tuyjrs] } }
+jobs:
+  p:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm ci
+      - run: |
+          set +e
+          cat > /tmp/p.mjs <<'JS'
+          import { parse } from './collector/sources/jleague.js';
+          const UA='Mozilla/5.0 (compatible; SportsDashboard/1.0)';
+          const f=async u=>{const r=await fetch(u,{headers:{'User-Agent':UA},signal:AbortSignal.timeout(30000)});return r.text();};
+          for (const c of ['kashima','urawa']) {
+            const ev=parse(await f(`https://www.jleague.jp/club/${c}/day/`),'https://www.jleague.jp/');
+            const j1=ev.filter(e=>e.competition.includes('J1'));
+            console.log(c, ev.length, 'j1', j1.length, 'results', j1.filter(e=>e.result).length);
+            console.log(j1.map(e=>`${e.start.slice(0,10)} ${e.home}-${e.away} ${e.result?e.result.home+'-'+e.result.away:''}`).join('\n'));
+          }
+          const d=JSON.parse(await f('https://watabo-bonobo.github.io/SportsDashboard/data/events.json?t='+Date.now()));
+          const j=d.events.filter(e=>e.competition.includes('J1'));
+          console.log('live j1', j.length, 'results', j.filter(e=>e.result).length, 'earliest', j.map(e=>e.start).sort()[0]);
+          console.log(JSON.stringify(d.standings.find(t=>t.id==='jleague-j1')?.rows.slice(0,3)));
+          JS
+          node /tmp/p.mjs
+          exit 0

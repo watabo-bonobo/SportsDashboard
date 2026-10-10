@@ -10,7 +10,7 @@ jobs:
       - run: npm ci
       - run: |
           set +e
-          cat > /tmp/p.mjs <<'JS'
+          cat > probe.mjs <<'JS'
           import { parse } from './collector/sources/jleague.js';
           const UA='Mozilla/5.0 (compatible; SportsDashboard/1.0)';
           const f=async u=>{const r=await fetch(u,{headers:{'User-Agent':UA},signal:AbortSignal.timeout(30000)});return r.text();};
@@ -25,5 +25,5 @@ jobs:
           console.log('live j1', j.length, 'results', j.filter(e=>e.result).length, 'earliest', j.map(e=>e.start).sort()[0]);
           console.log(JSON.stringify(d.standings.find(t=>t.id==='jleague-j1')?.rows.slice(0,3)));
           JS
-          node /tmp/p.mjs
+          node probe.mjs
           exit 0

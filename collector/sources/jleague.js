@@ -2,6 +2,7 @@
 // ACL（エリート・Two）の日程・結果ページ（Ｊクラブが出る試合だけに詳細リンクがある）
 import * as cheerio from 'cheerio';
 import { mergeEvent } from '../merge.js';
+import { enrichStandings, fetchResults } from './jleague-data.js';
 
 export const name = 'Ｊリーグ公式';
 
@@ -219,8 +220,15 @@ export function parseStandings(html) {
   return rows;
 }
 
-export async function standings(_now, fetchText) {
+export async function standings(now, fetchText) {
   const url = 'https://www.jleague.jp/j1/standings/';
-  const rows = parseStandings(await fetchText(url));
-  return rows.length ? [{ id: 'jleague-j1', sport: 'soccer', title: '明治安田Ｊ１リーグ', rows, source: url }] : [];
+  let rows = parseStandings(await fetchText(url));
+  if (!rows.length) return [];
+  // 直近5試合・順位の推移はデータサイトから。取れなくても順位表は出す
+  try {
+    rows = enrichStandings(rows, await fetchResults(now, fetchText));
+  } catch {
+    // 付けずに続ける
+  }
+  return [{ id: 'jleague-j1', sport: 'soccer', title: '明治安田Ｊ１リーグ', rows, source: url }];
 }

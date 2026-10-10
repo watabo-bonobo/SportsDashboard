@@ -47,6 +47,8 @@ GitHub Actions（`.github/workflows/deploy.yml`）が **1時間ごと** に各�
 
 順位表は J1（Ｊリーグ公式）、プロ野球（NPB「チーム勝敗表」）、リーグＨ（シーズン開幕後）を集め、
 画面右の「順位表」タブに表示します。取れなかった表は前回のものを表示し続けます。
+J1 の表には、Ｊリーグ・データサイト「日程・結果検索」（`data.j-league.or.jp/SFMS01/`）の今シーズン全結果から計算した
+各チームの直近5試合（勝・分・敗）と節ごとの順位を付けます（`collector/sources/jleague-data.js`）。「鹿島」タブでは鹿島の順位・直近5試合・順位の推移を表示します。
 
 各サイトのページの作りが変わると、そのサイトの分だけ収集が止まります（他のサイトと前回データはそのまま表示されます）。
 ローカルでの試し方: `node collector/collect.js "" public/data/events.json /tmp/out.json`

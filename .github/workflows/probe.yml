@@ -14,34 +14,20 @@ jobs:
           set +e
           cat > p.mjs <<'JS'
           const UA = 'Mozilla/5.0 (compatible; SportsDashboardBot/1.0)';
-          const urls = [
-            'https://www.jleague.jp/match/',
-            'https://www.jleague.jp/acl/',
-            'https://www.jleague.jp/acle/',
-            'https://www.jleague.jp/match/search/?category%5B%5D=acle&year=2026',
-            'https://www.jleague.jp/match/search/acle/',
-            'https://site.api.espn.com/apis/site/v2/sports/soccer/afc.champions/scoreboard?dates=20260901-20261231&limit=300',
-            'https://site.api.espn.com/apis/site/v2/sports/soccer/afc.cup/scoreboard?dates=20260901-20261231&limit=300',
-            'https://www.the-afc.com/ja/club/afc_champions_league_elite/fixtures.html',
-          ];
+          const urls = ['https://www.jleague.jp/acle/match/', 'https://www.jleague.jp/acl2/match/', 'https://www.jleague.jp/match/'];
           for (const u of urls) {
             try {
               const r = await fetch(u, { headers: { 'User-Agent': UA, 'Accept-Language': 'ja' }, signal: AbortSignal.timeout(30000) });
               const t = await r.text();
               console.log('=====', u, r.status, t.length, r.url);
-              const cats = [...new Set([...t.matchAll(/\/match\/([a-z0-9]+)\/\d{4}\//g)].map(m => m[1]))];
-              console.log('cats', cats.join(','));
-              const acl = [...t.matchAll(/.{0,200}(ACL|acl|ＡＣＬ|AFC).{0,200}/g)].slice(0, 8).map(m => m[0].replace(/\s+/g, ' '));
-              console.log(acl.join('\n---\n'));
-              if (u.includes('espn')) {
-                const j = JSON.parse(t);
-                console.log('leagues', JSON.stringify(j.leagues?.map(l => [l.name, l.slug, l.season])));
-                for (const e of (j.events ?? []).slice(0, 60)) {
-                  const c = e.competitions[0];
-                  console.log(e.date, e.name, c.status.type.name, c.competitors.map(x => `${x.team.displayName}(${x.team.id}) ${x.score}`).join(' | '), c.venue?.fullName ?? '', (c.notes?.[0]?.headline ?? ''), JSON.stringify(c.broadcasts ?? []));
-                }
-                console.log('total', j.events?.length);
-              }
+              const hrefs = [...new Set([...t.matchAll(/href="([^"]*(acle|acl2)[^"]*)"/g)].map(m => m[1]))];
+              console.log('hrefs', hrefs.slice(0, 80).join('\n'));
+              const ids = [...new Set([...t.matchAll(/id="(20\d{8})"/g)].map(m => m[1]))];
+              console.log('ids', ids.join(','));
+              const heads = [...new Set([...t.matchAll(/AFCチャンピオンズリーグ[^<"]{0,60}/g)].map(m => m[0]))];
+              console.log('heads', heads.join(' / '));
+              const teams = [...t.matchAll(/m-schedule__team-name[^>]*>([^<]+)</g)].map(m => m[1]);
+              console.log('teams', teams.slice(0, 60).join(','));
             } catch (e) { console.log('=====', u, 'ERR', e.message); }
           }
           JS

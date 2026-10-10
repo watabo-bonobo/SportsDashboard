@@ -6,30 +6,23 @@ jobs:
   probe:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - name: probe
         run: |
           set +e
-          cat > p.mjs <<'JS'
+          npm ci --silent
+          cat > collector/p.mjs <<'JS'
+          import * as jl from './sources/jleague.js';
           const UA = 'Mozilla/5.0 (compatible; SportsDashboardBot/1.0)';
-          const urls = ['https://www.jleague.jp/acle/match/', 'https://www.jleague.jp/acl2/match/', 'https://www.jleague.jp/match/'];
-          for (const u of urls) {
-            try {
-              const r = await fetch(u, { headers: { 'User-Agent': UA, 'Accept-Language': 'ja' }, signal: AbortSignal.timeout(30000) });
-              const t = await r.text();
-              console.log('=====', u, r.status, t.length, r.url);
-              const hrefs = [...new Set([...t.matchAll(/href="([^"]*(acle|acl2)[^"]*)"/g)].map(m => m[1]))];
-              console.log('hrefs', hrefs.slice(0, 80).join('\n'));
-              const ids = [...new Set([...t.matchAll(/id="(20\d{8})"/g)].map(m => m[1]))];
-              console.log('ids', ids.join(','));
-              const heads = [...new Set([...t.matchAll(/AFCチャンピオンズリーグ[^<"]{0,60}/g)].map(m => m[0]))];
-              console.log('heads', heads.join(' / '));
-              const teams = [...t.matchAll(/m-schedule__team-name[^>]*>([^<]+)</g)].map(m => m[1]);
-              console.log('teams', teams.slice(0, 60).join(','));
-            } catch (e) { console.log('=====', u, 'ERR', e.message); }
+          for (const u of jl.urls()) {
+            const t = await (await fetch(u, { headers: { 'User-Agent': UA, 'Accept-Language': 'ja' } })).text();
+            const ev = jl.parse(t, u);
+            console.log('=====', u, ev.length);
+            for (const e of ev.filter((e) => /^AFC/.test(e.competition))) console.log(e.start, e.competition, e.round, e.home, 'vs', e.away, JSON.stringify(e.result ?? ''), e.venue ?? '', (e.broadcasts ?? []).map((b) => b.name).join('/'));
           }
           JS
-          node p.mjs
+          node collector/p.mjs
           exit 0

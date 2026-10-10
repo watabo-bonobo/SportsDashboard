@@ -1,10 +1,11 @@
-// Ｊリーグ公式サイトの「今週の日程・結果」（J1・ルヴァンカップ・天皇杯など）
+// Ｊリーグ公式サイトの「今週の日程・結果」（J1・ルヴァンカップ・天皇杯など）と、
+// ACL（エリート・Two）の日程・結果ページ（Ｊクラブが出る試合だけに詳細リンクがある）
 import * as cheerio from 'cheerio';
 
 export const name = 'Ｊリーグ公式';
 
 export function urls() {
-  return ['https://www.jleague.jp/match/'];
+  return ['https://www.jleague.jp/match/', 'https://www.jleague.jp/acle/match/', 'https://www.jleague.jp/acl2/match/'];
 }
 
 /** href のカテゴリ → 大会名。ここに無いカテゴリ（J2/J3 など）は取り込まない */
@@ -12,7 +13,25 @@ export const COMPETITIONS = {
   j1: '明治安田J1リーグ',
   leaguecup: 'ルヴァンカップ',
   emperor: '天皇杯',
+  acle: 'AFCチャンピオンズリーグエリート',
+  acl2: 'AFCチャンピオンズリーグTwo',
 };
+
+/**
+ * ACL の試合は「AFCチャンピオンズリーグElite　リーグステージ　ＭＤ2　東地区」という見出しの下に並ぶ。
+ * いちばん近い見出しから「リーグステージ MD2」の部分を取り出す
+ */
+export function aclRound($, box) {
+  let node = box.parent();
+  for (let i = 0; i < 8 && node.length; i++, node = node.parent()) {
+    const head = node.find('.m-section-header__h2-eyebrow--logo-text-container-pc').first();
+    if (!head.length) continue;
+    const text = head.text().normalize('NFKC').replace(/\s+/g, ' ').trim();
+    const round = text.replace(/^AFCチャンピオンズリーグ\S*\s*/, '').replace(/\s*(東|西)地区$/, '').trim();
+    return round || undefined;
+  }
+  return undefined;
+}
 
 /**
  * React のストリーミング描画では、後から届いた部分（スコアなど）が
@@ -104,6 +123,7 @@ export function parse(html, url) {
       broadcasts: platform ? parsePlatforms(platform) : undefined,
       source: new URL(href, url).toString(),
     };
+    if (m[1] === 'acle' || m[1] === 'acl2') ev.round = aclRound($, box);
     if (!ev.home || !ev.away) return;
     if (over && scores.length >= 2) {
       ev.result = { home: Number(scores[0]), away: Number(scores[1]) };

@@ -21,7 +21,10 @@ export const J1_CLUBS = [
  * React のデータとしてエスケープされた JSON なので、引用符の前の \ を許す
  */
 export function parseJ1Clubs(html) {
-  const group = html.match(/\\?"id\\?":\\?"j1\\?".*?\\?"options\\?":\[(.*?)\]/s);
+  // ページは 1MB 近くあるので、まず J1 グループの位置を探してから、その近くだけを読む
+  const start = html.search(/\\?"id\\?":\\?"j1\\?",\\?"(groupLabel|options)/);
+  if (start < 0) return [];
+  const group = html.slice(start, start + 6000).match(/\\?"options\\?":\[([^\]]*)\]/);
   if (!group) return [];
   return [...new Set([...group[1].matchAll(/\\?"value\\?":\\?"([a-z0-9]+)\\?"/g)].map((m) => m[1]))];
 }

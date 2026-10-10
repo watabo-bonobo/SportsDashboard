@@ -1,4 +1,4 @@
-import type { Broadcast, Sport, SportEvent, Standings } from './types';
+import type { Broadcast, FormResult, Sport, SportEvent, StandingRow, Standings } from './types';
 import type { Side } from './schedule';
 import {
   eventTitle,
@@ -184,6 +184,7 @@ export function FeaturedCard({ event, now }: { event: SportEvent; now: Date }) {
 
 export function StandingsTable({ table, side }: { table: Standings; side?: Side }) {
   const soccer = table.rows.some((r) => r.points !== undefined);
+  const withForm = table.rows.some((r) => r.form?.length);
   return (
     <section className="standings" aria-label={`${table.title} 順位表`}>
       <h3 className="standings-title">
@@ -214,6 +215,11 @@ export function StandingsTable({ table, side }: { table: Standings; side?: Side 
             ) : (
               <th scope="col">差</th>
             )}
+            {withForm && (
+              <th scope="col" className="form-col">
+                直近5試合
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -236,10 +242,130 @@ export function StandingsTable({ table, side }: { table: Standings; side?: Side 
               ) : (
                 <td>{r.gb ?? '―'}</td>
               )}
+              {withForm && (
+                <td className="form-col">
+                  <FormBadges form={r.form} />
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
       </table>
+      {withForm && <p className="standings-note">直近5試合は左が古く、右が最新です。</p>}
     </section>
+  );
+}
+
+/** "10/9 G大阪(H) 2-0 勝" */
+function formText(f: FormResult): string {
+  return `${formatDate(f.date)} ${f.opponent}(${f.home ? 'H' : 'A'}) ${f.score} ${OUTCOME_LABEL[f.outcome]}`;
+}
+
+/** 直近の勝敗。色だけに頼らず「勝・分・敗」の文字で示す（古い順に左から） */
+export function FormBadges({ form }: { form?: FormResult[] }) {
+  if (!form?.length) return <span className="form-none">―</span>;
+  return (
+    <span className="form" role="list" aria-label="直近の試合（古い順）">
+      {form.map((f) => (
+        <span key={f.date + f.opponent} role="listitem" className={`form-badge form-${f.outcome}`} title={formText(f)} aria-label={formText(f)}>
+          {OUTCOME_LABEL[f.outcome]}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/** 鹿島など、応援クラブの調子（順位・直近5試合・順位の推移） */
+export function TeamFormCard({ row, label }: { row: StandingRow; label: string }) {
+  const ranks = row.ranks ?? [];
+  const last = [...ranks].reverse().find((r) => r !== null) ?? row.rank;
+  const prevIdx = ranks.length - 2;
+  const prev = prevIdx >= 0 ? ranks[prevIdx] : null;
+  const move = prev !== null && prev !== undefined ? prev - last : 0;
+  return (
+    <article className="card team-form sport-soccer">
+      <p className="meta">
+        <SportTag sport="soccer" />
+        <span>{label}の調子（J1）</span>
+      </p>
+      <p className="team-form-rank">
+        <span className="big">{row.rank}</span>位
+        <span className="team-form-sub">
+          勝点{row.points}・{row.win}勝{row.draw ?? 0}分{row.loss}敗
+          {move !== 0 && <span className={move > 0 ? 'up' : 'down'}>{move > 0 ? `前節から${move}つ上昇` : `前節から${-move}つ下降`}</span>}
+        </span>
+      </p>
+      {row.form?.length ? (
+        <>
+          <h4 className="team-form-head">直近5試合（新しい順）</h4>
+          <ul className="team-form-list">
+            {[...row.form].reverse().map((f) => (
+              <li key={f.date + f.opponent}>
+                <span className={`form-badge form-${f.outcome}`} aria-hidden="true">
+                  {OUTCOME_LABEL[f.outcome]}
+                </span>
+                <span className="when">{formatDate(f.date)}</span>
+                <span>
+                  {f.opponent}
+                  <span className="ha">{f.home ? 'ホーム' : 'アウェー'}</span>
+                </span>
+                <span className="team-form-score">{f.score}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+      {ranks.filter((r) => r !== null).length >= 2 && (
+        <>
+          <h4 className="team-form-head">順位の推移（節ごと）</h4>
+          <RankChart ranks={ranks} teams={20} />
+        </>
+      )}
+    </article>
+  );
+}
+
+/** 節ごとの順位の折れ線。上が1位。値は点の横に出さず、最新だけ数字で示す */
+export function RankChart({ ranks, teams }: { ranks: (number | null)[]; teams: number }) {
+  // カードの幅（約240px）に合わせた座標。文字が小さくなりすぎないよう、表示幅に近い大きさで描く
+  const W = 240;
+  const H = 110;
+  const pad = { l: 30, r: 30, t: 8, b: 20 };
+  const n = ranks.length;
+  const x = (i: number) => pad.l + (n === 1 ? 0 : (i * (W - pad.l - pad.r)) / (n - 1));
+  const y = (rank: number) => pad.t + ((rank - 1) * (H - pad.t - pad.b)) / (teams - 1);
+  const pts = ranks.map((r, i) => (r === null ? null : { i, r, x: x(i), y: y(r) })).filter((p) => p !== null);
+  const path = pts.map((p, k) => `${k === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+  const lastPt = pts[pts.length - 1];
+  const desc = pts.map((p) => `第${p.i + 1}節 ${p.r}位`).join('、');
+  return (
+    <figure className="rank-chart">
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`順位の推移: ${desc}`}>
+        {[1, 10, teams].map((r) => (
+          <g key={r}>
+            <line className="grid-line" x1={pad.l} x2={W - pad.r} y1={y(r)} y2={y(r)} />
+            <text className="axis" x={pad.l - 6} y={y(r)} dy="0.35em" textAnchor="end">
+              {r}位
+            </text>
+          </g>
+        ))}
+        {[0, n - 1].map((i) => (
+          <text key={i} className="axis" x={x(i)} y={H - 4} textAnchor="middle">
+            第{i + 1}節
+          </text>
+        ))}
+        <path className="line" d={path} />
+        {pts.map((p) => (
+          <circle key={p.i} className="dot" cx={p.x} cy={p.y} r={p === lastPt ? 4.5 : 3}>
+            <title>{`第${p.i + 1}節 ${p.r}位`}</title>
+          </circle>
+        ))}
+        {lastPt && (
+          <text className="last" x={lastPt.x + 7} y={lastPt.y} dy="0.35em">
+            {lastPt.r}位
+          </text>
+        )}
+      </svg>
+    </figure>
   );
 }

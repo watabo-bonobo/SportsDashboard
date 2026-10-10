@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mergeEvents, pruneOld } from './merge.js';
 import * as jfa from './sources/jfa-samuraiblue.js';
 import * as jleague from './sources/jleague.js';
+import * as jdata from './sources/jleague-data.js';
 import * as tt from './sources/tvtokyo-tabletennis.js';
 
 const NOW = new Date('2026-10-07T12:00:00+09:00');
@@ -391,5 +392,54 @@ describe('ハンドボール', () => {
       ['jha-w-402', '第20回アジア競技大会（2026/愛知・名古屋）（女子）', '2026-09-19', '2026-09-27'],
       ['jha-w-415', '第21回女子ハンドボールアジア選手権', '2026-11-23', '2026-12-03'],
     ]);
+  });
+});
+
+describe('Ｊリーグ・データサイト（直近5試合・順位の推移）', () => {
+  const row = (sec, date, home, score, away) =>
+    `<tr><td>2026/27</td><td>Ｊ１</td><td>第${sec}節第１日</td><td>${date}</td><td>19:03</td>` +
+    `<td class="nowrap"><a href="#">${home}</a></td><td class="al-c nowrap">${score}</td>` +
+    `<td class="nowrap"><a href="#">${away}</a></td><td>メルスタ</td><td>&nbsp;</td><td>ＤＡＺＮ</td></tr>`;
+  const html = `<table><tr><th>シーズン</th><th>大会</th></tr>
+    ${row('１', '26/08/07(金)', '横浜FM', '3-4', '鹿島')}
+    ${row('１', '26/08/08(土)', 'Ｇ大阪', '1-1', '柏')}
+    ${row('２', '26/08/15(土)', '鹿島', '0-1', 'Ｇ大阪')}
+    ${row('２', '26/08/15(土)', '柏', '2-0', '横浜FM')}
+    ${row('３', '26/08/22(土)', '柏', '\n vs', '鹿島')}
+  </table>`;
+  const matches = jdata.parseResults(html);
+
+  it('終わった試合だけを読み、全角のチーム名をそろえる', () => {
+    expect(matches).toHaveLength(4);
+    expect(matches[1]).toEqual({ section: 1, date: '2026-08-08', home: 'G大阪', away: '柏', homeGoals: 1, awayGoals: 1 });
+  });
+
+  it('節ごとの順位と直近の勝敗を付ける', () => {
+    const rows = [
+      { rank: 1, team: '柏', played: 2, win: 1, draw: 1, loss: 0, points: 4 },
+      { rank: 2, team: 'G大阪', played: 2, win: 1, draw: 1, loss: 0, points: 4 },
+      { rank: 3, team: '鹿島', played: 2, win: 1, draw: 0, loss: 1, points: 3 },
+      { rank: 4, team: '横浜FM', played: 2, win: 0, draw: 0, loss: 2, points: 0 },
+    ];
+    const out = jdata.enrichStandings(rows, matches);
+    // 第1節: 鹿島(3) G大阪・柏(1、同じなら名前順) 横浜FM(0) → 第2節: 柏・G大阪(4) 鹿島(3) 横浜FM(0)
+    expect(out.find((r) => r.team === '鹿島').ranks).toEqual([1, 3]);
+    expect(out.find((r) => r.team === '柏').ranks).toEqual([3, 1]);
+    // 試合数が公式とそろっているので、最後の節は公式の順位（G大阪は2位）
+    expect(out.find((r) => r.team === 'G大阪').ranks).toEqual([2, 2]);
+    expect(out.find((r) => r.team === '鹿島').form).toEqual([
+      { date: '2026-08-07', opponent: '横浜FM', home: false, score: '4-3', outcome: 'win' },
+      { date: '2026-08-15', opponent: 'G大阪', home: true, score: '0-1', outcome: 'loss' },
+    ]);
+  });
+
+  it('結果が取れなければ順位表はそのまま', () => {
+    const rows = [{ rank: 1, team: '柏', win: 0, loss: 0 }];
+    expect(jdata.enrichStandings(rows, [])).toBe(rows);
+  });
+
+  it('シーズンは7月で切り替わる', () => {
+    expect(jdata.resultsUrl(new Date('2026-10-10T12:00:00+09:00'))).toContain('competition_years=2026&');
+    expect(jdata.seasonYear(new Date('2027-03-01T12:00:00+09:00'))).toBe(2026);
   });
 });

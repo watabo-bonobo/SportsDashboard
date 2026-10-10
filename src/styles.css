@@ -35,6 +35,8 @@
 
   --win: #146a3e;
   --loss: #c20000;
+  /* 勝・敗バッジなど、塗りの上の文字 */
+  --on-strong: #ffffff;
 
   --radius: 8px;
   color-scheme: light;
@@ -71,6 +73,7 @@
 
     --win: #6fd3a0;
     --loss: #ff8a8a;
+    --on-strong: #111214;
     color-scheme: dark;
   }
 }
@@ -724,6 +727,158 @@ h1 {
   font-size: 12px;
   font-weight: 400;
   color: var(--text-sub);
+}
+
+.standings-note {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--text-sub);
+}
+
+/* ---- 直近5試合（勝・分・敗のバッジ）----
+ * 色だけで区別しないよう、必ず文字を入れ、形（塗り／枠）も変える */
+.form {
+  display: inline-flex;
+  gap: 2px;
+  vertical-align: middle;
+}
+.standings .form-col {
+  text-align: left;
+  padding-left: 6px;
+}
+/* 直近5試合を付けた表は列が増えるので、チーム名を折り返さず詰める */
+.standings table:has(.form-col) th,
+.standings table:has(.form-col) td {
+  padding: 4px 3px;
+}
+.standings table:has(.form-col) .team-col {
+  white-space: nowrap;
+}
+.form-badge {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+.form-win {
+  background: var(--win);
+  color: var(--on-strong);
+}
+.form-loss {
+  background: var(--loss);
+  color: var(--on-strong);
+}
+.form-draw {
+  border: 1.5px solid var(--line-strong);
+  color: var(--text);
+  background: var(--panel);
+}
+.form-none {
+  color: var(--text-sub);
+}
+
+/* ---- 応援クラブの調子 ---- */
+.team-form {
+  gap: 6px;
+}
+.team-form-rank {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  font-weight: 700;
+}
+.team-form-rank .big {
+  font-size: 28px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.team-form-sub {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-sub);
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.team-form-sub .up {
+  color: var(--win);
+  font-weight: 700;
+}
+.team-form-sub .down {
+  color: var(--loss);
+  font-weight: 700;
+}
+.team-form-head {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-sub);
+}
+.team-form-list {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  font-size: 13px;
+}
+.team-form-list li {
+  display: grid;
+  grid-template-columns: 20px 64px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  border-bottom: 1px solid var(--line);
+  font-variant-numeric: tabular-nums;
+}
+.team-form-list .when {
+  color: var(--text-sub);
+}
+.team-form-list .ha {
+  margin-left: 6px;
+  font-size: 11px;
+  color: var(--text-sub);
+}
+.team-form-score {
+  font-weight: 700;
+}
+.rank-chart {
+  margin: 2px 0 0;
+}
+.rank-chart svg {
+  display: block;
+  width: 100%;
+  max-width: 280px;
+  height: auto;
+  overflow: visible;
+}
+.rank-chart .grid-line {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.rank-chart .axis {
+  fill: var(--text-sub);
+  font-size: 11px;
+}
+.rank-chart .line {
+  fill: none;
+  stroke: var(--soccer);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.rank-chart .dot {
+  fill: var(--soccer);
+  stroke: var(--panel);
+  stroke-width: 2;
+}
+.rank-chart .last {
+  fill: var(--text);
+  font-size: 12px;
+  font-weight: 700;
 }
 
 /* ---- スマートフォン：文字と余白を詰め、1画面に収める ----

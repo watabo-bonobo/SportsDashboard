@@ -63,6 +63,21 @@ export interface StandingRow {
   gb?: string;
   /** 補足（MLB の日本人選手など）。あれば行を強調する */
   note?: string;
+  /** 直近の試合（古い順、最大5試合）。J1 のみ */
+  form?: FormResult[];
+  /** 第1節からの各節終了時点の順位（その節に試合が無い場合は null）。J1 のみ */
+  ranks?: (number | null)[];
+}
+
+export interface FormResult {
+  /** "YYYY-MM-DD" */
+  date: string;
+  opponent: string;
+  /** ホームゲームか */
+  home: boolean;
+  /** 自チームの得点-相手の得点 */
+  score: string;
+  outcome: 'win' | 'draw' | 'loss';
 }
 
 export interface Standings {

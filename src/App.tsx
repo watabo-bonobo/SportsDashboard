@@ -13,7 +13,7 @@ import {
   SPORT_LABEL,
 } from './schedule';
 import { validateEventData } from './validate';
-import { EventRow, FeaturedCard, ResultRow, StandingsTable, SummaryBar } from './components';
+import { EventRow, FeaturedCard, ResultRow, StandingsTable, SummaryBar, TeamFormCard } from './components';
 
 // 絞り込みボタンの並び（鹿島はサッカーの中のチーム絞り込み）
 const FILTER_ORDER: SportFilter[] = ['all', 'baseball', 'soccer', 'kashima', 'handball', 'basketball', 'volleyball', 'tabletennis'];
@@ -129,6 +129,11 @@ export default function App() {
     }
     return b;
   }, [visible, now, prefs.sport]);
+  // 鹿島で絞り込んだときは、J1 順位表の鹿島の行から調子（直近5試合・順位の推移）を出す
+  const kashimaRow =
+    prefs.sport === 'kashima'
+      ? data?.standings?.find((t) => t.id === 'jleague-j1')?.rows.find((r) => KASHIMA.is(r.team))
+      : undefined;
   const summary = useMemo(() => (visible ? buildSummary(visible, now, side) : null), [visible, now, side]);
 
   const today = jstDateKey(now);
@@ -218,13 +223,20 @@ export default function App() {
           <main className={`grid show-${mobileView}`}>
             <section className="panel area-next" aria-labelledby="h-next">
               <h2 id="h-next" className="panel-title">
-                次の注目試合・大会<span className="count">競技ごと</span>
+                {prefs.sport === 'kashima' ? (
+                  '次の試合と調子'
+                ) : (
+                  <>
+                    次の注目試合・大会<span className="count">競技ごと</span>
+                  </>
+                )}
               </h2>
               <div className="panel-body featured">
                 {board.nextFeatured.length === 0 && <p className="empty">予定されている注目試合はありません</p>}
                 {board.nextFeatured.map((e) => (
                   <FeaturedCard key={e.id} event={e} now={now} />
                 ))}
+                {kashimaRow && <TeamFormCard row={kashimaRow} label={KASHIMA.label} />}
               </div>
             </section>
 

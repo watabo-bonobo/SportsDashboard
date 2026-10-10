@@ -12,7 +12,7 @@ export const PAGES = [`${BASE}/match/`, `${BASE}/acle/match/`, `${BASE}/acl2/mat
 
 /** クラブ一覧が取れなかったときの J1 クラブ（2026-27） */
 export const J1_CLUBS = [
-  'kashima', 'mito', 'kashiwa', 'chiba', 'urawa', 'fctokyo', 'tokyov', 'machida', 'kawasakif', 'yokohamafm',
+  'kashima', 'mito', 'kashiwa', 'chiba', 'urawa', 'ftokyo', 'tokyov', 'machida', 'kawasakif', 'yokohamafm',
   'shimizu', 'nagoya', 'kyoto', 'gosaka', 'cosaka', 'kobe', 'okayama', 'hiroshima', 'fukuoka', 'nagasaki',
 ];
 

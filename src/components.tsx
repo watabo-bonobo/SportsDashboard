@@ -4,6 +4,7 @@ import {
   eventTitle,
   formatDate,
   formatPeriod,
+  formatChinaTime,
   formatTime,
   googleCalendarUrl,
   JAPAN,
@@ -89,10 +90,30 @@ export function SummaryBar({ summary, side = JAPAN }: { summary: Summary; side?:
   );
 }
 
+/** 開始時刻を日本時間と中国時間で並べる（時刻未定なら「時間未定」だけ） */
+function StartTimes({ event, inline = false }: { event: SportEvent; inline?: boolean }) {
+  const cn = formatChinaTime(event);
+  if (!cn) return <>{formatTime(event)}</>;
+  return (
+    <span className={`times${inline ? ' is-inline' : ''}`}>
+      <span className="time-jp">
+        <span className="tz">日本</span>
+        {formatTime(event)}
+      </span>
+      <span className="time-cn">
+        <span className="tz">中国</span>
+        {cn}
+      </span>
+    </span>
+  );
+}
+
 export function EventRow({ event }: { event: SportEvent }) {
   return (
     <article className={`row${event.featured ? ' is-featured' : ''}`}>
-      <p className="when">{event.end ? formatPeriod(event) : formatTime(event)}</p>
+      <div className="when">
+        {event.end ? formatPeriod(event) : <StartTimes event={event} />}
+      </div>
       <div className="body">
         <p className="meta">
           <SportTag sport={event.sport} />
@@ -162,7 +183,15 @@ export function FeaturedCard({ event, now }: { event: SportEvent; now: Date }) {
         <span className="countdown">{relativeDay(date, now)}</span>
       </p>
       <h3 className="card-match">{eventTitle(event)}</h3>
-      <p className="card-when">{event.end ? formatPeriod(event) : `${formatDate(date)} ${formatTime(event)}`}</p>
+      <p className="card-when">
+        {event.end ? (
+          formatPeriod(event)
+        ) : (
+          <>
+            {formatDate(date)} <StartTimes event={event} inline />
+          </>
+        )}
+      </p>
       <p className="card-sub" title={event.competition}>
         {event.competition}
         {event.round && ` ${event.round}`}

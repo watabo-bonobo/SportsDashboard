@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import type { EventData, SportEvent } from './types';
-import { buildBoard, formatDate, formatTime, googleCalendarUrl, jstDateKey, phaseOf } from './schedule';
+import { buildBoard, formatChinaTime, formatDate, formatTime, googleCalendarUrl, jstDateKey, phaseOf } from './schedule';
 import { validateEventData } from './validate';
 
 const ev = (over: Partial<SportEvent>): SportEvent => ({
@@ -28,6 +28,12 @@ describe('日付の扱い', () => {
   it('時刻未定は「時間未定」', () => {
     expect(formatTime(ev({ start: '2026-11-26' }))).toBe('時間未定');
     expect(formatTime(ev({ start: '2026-10-10T05:00:00Z' }))).toBe('14:00');
+  });
+
+  it('中国時間は日本の1時間遅れ。日付が変わるときは前日と付ける', () => {
+    expect(formatChinaTime(ev({ start: '2026-10-10T19:00:00+09:00' }))).toBe('18:00');
+    expect(formatChinaTime(ev({ start: '2026-10-11T00:30:00+09:00' }))).toBe('前日23:30');
+    expect(formatChinaTime(ev({ start: '2026-10-11' }))).toBeNull();
   });
 });
 

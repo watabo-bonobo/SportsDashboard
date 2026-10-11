@@ -881,6 +881,34 @@ h1 {
   font-weight: 700;
 }
 
+/* ---- 開始時刻（日本時間・中国時間）---- */
+.times {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.times.is-inline {
+  display: inline-flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0 10px;
+}
+.time-jp,
+.time-cn {
+  white-space: nowrap;
+}
+.time-cn {
+  font-size: 0.85em;
+  font-weight: 500;
+  color: var(--text-sub);
+}
+.times .tz {
+  margin-right: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-sub);
+}
+
 /* ---- スマートフォン：文字と余白を詰め、1画面に収める ----
  * 3つのパネルは「注目／予定／結果・順位」で切り替え、パネルの中だけをスクロールする */
 .views {

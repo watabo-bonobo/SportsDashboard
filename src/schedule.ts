@@ -144,6 +144,21 @@ export function formatTime(e: SportEvent): string {
   return hasTime(e) ? formatClock(new Date(e.start)) : '時間未定';
 }
 
+const CST_OFFSET_MS = 8 * 60 * 60 * 1000;
+
+/**
+ * 中国時間（UTC+8、日本の1時間遅れ・夏時間なし）の開始時刻 "13:00"。
+ * 日本時間と日付が変わるとき（日本の0時台）は "前日23:30" とする。時刻未定なら null
+ */
+export function formatChinaTime(e: SportEvent): string | null {
+  if (!hasTime(e)) return null;
+  const t = new Date(e.start).getTime();
+  const cn = new Date(t + CST_OFFSET_MS);
+  const clock = `${String(cn.getUTCHours()).padStart(2, '0')}:${String(cn.getUTCMinutes()).padStart(2, '0')}`;
+  const sameDay = cn.toISOString().slice(0, 10) === jstDateKey(new Date(t));
+  return sameDay ? clock : `前日${clock}`;
+}
+
 /** Date を日本時間の "HH:MM" に */
 export function formatClock(d: Date): string {
   const j = new Date(d.getTime() + JST_OFFSET_MS);

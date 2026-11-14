@@ -527,3 +527,49 @@ describe('Ｊリーグ 得点者', () => {
     expect(requested).not.toContain('https://www.jleague.jp/match/j1/2026/111104/');
   });
 });
+
+describe('JFA 得点者', () => {
+  const page = (left, right, leftName = '日本', rightName = 'ウルグアイ') => `<div id="score-board-header">
+    <div class="flag"><p><img src="a.png"></p><p>${leftName}</p></div><div class="total-score">3</div>
+    <div class="flag"><p><img src="b.png"></p><p>${rightName}</p></div></div>
+    <div id="game-content-wrap"><div class="scorerLeft">${left}</div><div class="title-scorer">得点者</div><div class="scorerRight">${right}</div></div>`;
+
+  it('1試合だけの企画のページから試合ページの URL を作る', () => {
+    expect(jfa.matchPageUrl('https://www.jfa.jp/samuraiblue/20260924/')).toBe('https://www.jfa.jp/samuraiblue/20260924/match_page.html');
+    expect(jfa.matchPageUrl('https://www.jfa.jp/samuraiblue/kirincupsoccer_2026/')).toBeNull();
+  });
+
+  it('日本の得点者をホーム側として読む', () => {
+    const html = page('11分 松木 玖生<br>90+1分 塩貝 健人<br>90+6分 上田 綺世<br>', '42分 マキシミリアノ・アラウホ<br>');
+    expect(jfa.parseGoals(html)).toEqual([
+      { side: 'home', player: '松木 玖生', minute: "11'" },
+      { side: 'home', player: '塩貝 健人', minute: "90+1'" },
+      { side: 'home', player: '上田 綺世', minute: "90+6'" },
+      { side: 'away', player: 'マキシミリアノ・アラウホ', minute: "42'" },
+    ]);
+    // 日本が右側に載っていても日本をホームにする
+    const swapped = page('42分 アラウホ<br>', '11分 松木 玖生<br>', 'ウルグアイ', '日本');
+    expect(jfa.parseGoals(swapped).map((g) => [g.side, g.player])).toEqual([
+      ['home', '松木 玖生'],
+      ['away', 'アラウホ'],
+    ]);
+  });
+
+  it('スコアと数が合う試合だけ得点者を付ける', async () => {
+    const schedule = `<table>
+      <tr><td class="date">9/24(木)</td><td class="comp_name"><a href="/samuraiblue/20260924/">キリンチャレンジカップ</a></td><td class="score">〇3-1</td><td class="team">ウルグアイ</td><td class="place">宮城／キューアンドエースタジアムみやぎ</td></tr>
+      <tr><td class="date">9/28(月)</td><td class="comp_name"><a href="/samuraiblue/20260928/">キリンチャレンジカップ</a></td><td class="score">〇2-1</td><td class="team">ベネズエラ</td><td class="place">広島／エディオンピースウイング広島</td></tr>
+    </table>`;
+    const pages = {
+      'https://www.jfa.jp/samuraiblue/schedule_result/2026.html': schedule,
+      'https://www.jfa.jp/samuraiblue/20260924/match_page.html': page('11分 松木 玖生<br>90+1分 塩貝 健人<br>90+6分 上田 綺世<br>', '42分 アラウホ<br>'),
+      'https://www.jfa.jp/samuraiblue/20260928/match_page.html': page('49分 上田 綺世<br>', ''),
+    };
+    const events = await jfa.collect(NOW, async (url) => {
+      if (!(url in pages)) throw new Error('HTTP 404');
+      return pages[url];
+    });
+    expect(events[0].goals).toHaveLength(4);
+    expect(events[1].goals).toBeUndefined();
+  });
+});

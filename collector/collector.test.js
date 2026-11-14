@@ -479,3 +479,51 @@ describe('Ｊリーグ・データサイト（直近5試合・順位の推移）
     expect(jdata.seasonYear(new Date('2027-03-01T12:00:00+09:00'))).toBe(2026);
   });
 });
+
+describe('Ｊリーグ 得点者', () => {
+  const cell = (t) => (t ? `<p class="a-typography">${t}</p>` : '<div class="o-page-header__player-score-empty"></div>');
+  const list = (rows) =>
+    `<div class="o-page-header__content"><div class="o-page-header__player-score-list">${rows.flat().map(cell).join('')}</div></div>`;
+  const html = list([
+    ['<a href="/player/1/">宮市 亮</a>', "20'", "45+6'", '<a href="/player/2/">鈴木 優磨</a>'],
+    ['', '', "65'", '<a href="/player/3/">柴崎 岳</a>'],
+    ['', '', "82'", '<a href="/player/2/">鈴木 優磨</a>'],
+  ]);
+
+  it('ホーム・アウェーの得点者と時間を読む', () => {
+    expect(jleague.parseGoals(html)).toEqual([
+      { side: 'home', player: '宮市 亮', minute: "20'" },
+      { side: 'away', player: '鈴木 優磨', minute: "45+6'" },
+      { side: 'away', player: '柴崎 岳', minute: "65'" },
+      { side: 'away', player: '鈴木 優磨', minute: "82'" },
+    ]);
+  });
+
+  it('得点の数がスコアと合わなければ使わない', () => {
+    const goals = jleague.parseGoals(html);
+    expect(jleague.goalsMatchResult(goals, { home: 1, away: 3 })).toBe(true);
+    expect(jleague.goalsMatchResult(goals, { home: 2, away: 3 })).toBe(false);
+    expect(jleague.parseGoals('<p>なし</p>')).toEqual([]);
+  });
+
+  it('鹿島の終わった試合だけ試合ページを読む', async () => {
+    const box = (id, home, away, scores) => `<div class="m-schedule m-schedule--game-over" id="${id}"><a href="/match/j1/2026/${id.slice(4)}/">
+      <div class="m-schedule__team-home"><span class="m-schedule__team-name">${home}</span></div>
+      <div class="m-schedule__match-info"><p class="m-schedule__score">${scores[0]}</p><p class="m-schedule__score">${scores[1]}</p></div>
+      <div class="m-schedule__team-away"><span class="m-schedule__team-name">${away}</span></div></a></div>`;
+    const requested = [];
+    const pages = {
+      'https://www.jleague.jp/match/': box('2026111103', '横浜Ｆ・マリノス', '鹿島アントラーズ', [1, 3]) + box('2026111104', '柏レイソル', '浦和レッズ', [1, 0]),
+      'https://www.jleague.jp/match/j1/2026/111103/': html,
+    };
+    const fetchText = async (url) => {
+      requested.push(url);
+      if (!(url in pages)) throw new Error('HTTP 404');
+      return pages[url];
+    };
+    const events = await jleague.collect(NOW, fetchText);
+    expect(events.find((e) => e.id === 'jl-j1-2026111103').goals).toHaveLength(4);
+    expect(events.find((e) => e.id === 'jl-j1-2026111104').goals).toBeUndefined();
+    expect(requested).not.toContain('https://www.jleague.jp/match/j1/2026/111104/');
+  });
+});

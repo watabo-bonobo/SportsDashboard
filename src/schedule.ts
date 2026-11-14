@@ -1,4 +1,4 @@
-import type { Sport, SportEvent } from './types';
+import type { Goal, Sport, SportEvent } from './types';
 
 const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -284,4 +284,16 @@ export function buildSummary(events: SportEvent[], now: Date, side: Side = JAPAN
     if (outcome && daysBetween(end, today) <= 30 && daysBetween(end, today) >= 0) summary.record[outcome]++;
   }
   return summary;
+}
+
+/** 同じ選手の得点は1行にまとめる（"鈴木 優磨 45+6' 82'"） */
+export function groupGoals(goals: Goal[], side: Goal['side']): { player: string; minutes: string[] }[] {
+  const out: { player: string; minutes: string[] }[] = [];
+  for (const g of goals) {
+    if (g.side !== side) continue;
+    const row = out.find((r) => r.player === g.player);
+    if (row) row.minutes.push(g.minute);
+    else out.push({ player: g.player, minutes: [g.minute] });
+  }
+  return out;
 }

@@ -84,6 +84,15 @@ async function main() {
   const st = await collectStandings(now, base.standings);
   console.log([...report, ...st.report].join('\n'));
   const events = pruneOld(mergeEvents(merged, collected), now);
+  // 得点者など、試合ごとのページから足す情報
+  for (const src of SOURCES) {
+    if (!src.enrich) continue;
+    try {
+      console.log(`✓ ${src.name}（得点者）: ${await src.enrich(events, now, fetchText)}試合`);
+    } catch (e) {
+      console.log(`✗ ${src.name}（得点者）: ${e.message}`);
+    }
+  }
   const jst = new Date(now.getTime() + 9 * 3600000).toISOString().replace('T', ' ').slice(0, 16);
   const out = { updatedAt: jst, events, standings: st.standings };
   await writeFile(outPath, JSON.stringify(out, null, 2) + '\n');

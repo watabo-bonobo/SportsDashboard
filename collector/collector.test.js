@@ -506,25 +506,26 @@ describe('Ｊリーグ 得点者', () => {
     expect(jleague.parseGoals('<p>なし</p>')).toEqual([]);
   });
 
-  it('鹿島の終わった試合だけ試合ページを読む', async () => {
-    const box = (id, home, away, scores) => `<div class="m-schedule m-schedule--game-over" id="${id}"><a href="/match/j1/2026/${id.slice(4)}/">
-      <div class="m-schedule__team-home"><span class="m-schedule__team-name">${home}</span></div>
-      <div class="m-schedule__match-info"><p class="m-schedule__score">${scores[0]}</p><p class="m-schedule__score">${scores[1]}</p></div>
-      <div class="m-schedule__team-away"><span class="m-schedule__team-name">${away}</span></div></a></div>`;
+  it('鹿島の終わった試合で得点者がまだ無いものだけ試合ページを読む', async () => {
+    const ev = (id, home, away, result, extra = {}) => ({
+      id, sport: 'soccer', competition: '明治安田J1リーグ', home, away, start: '2026-10-05', result,
+      source: `https://www.jleague.jp/match/j1/2026/${id}/`, ...extra,
+    });
+    const events = [
+      ev('100501', '横浜Ｆ・マリノス', '鹿島アントラーズ', { home: 1, away: 3 }),
+      ev('100502', '柏レイソル', '浦和レッズ', { home: 1, away: 0 }),
+      ev('100503', '鹿島アントラーズ', 'ガンバ大阪', { home: 1, away: 0 }, { goals: [{ side: 'home', player: '鈴木 優磨', minute: "9'" }] }),
+      ev('100504', '鹿島アントラーズ', '柏レイソル', undefined),
+      ev('100505', '鹿島アントラーズ', '京都サンガF.C.', { home: 2, away: 0 }, { start: '2026-07-01' }),
+    ];
     const requested = [];
-    const pages = {
-      'https://www.jleague.jp/match/': box('2026111103', '横浜Ｆ・マリノス', '鹿島アントラーズ', [1, 3]) + box('2026111104', '柏レイソル', '浦和レッズ', [1, 0]),
-      'https://www.jleague.jp/match/j1/2026/111103/': html,
-    };
-    const fetchText = async (url) => {
+    const added = await jleague.enrich(events, NOW, async (url) => {
       requested.push(url);
-      if (!(url in pages)) throw new Error('HTTP 404');
-      return pages[url];
-    };
-    const events = await jleague.collect(NOW, fetchText);
-    expect(events.find((e) => e.id === 'jl-j1-2026111103').goals).toHaveLength(4);
-    expect(events.find((e) => e.id === 'jl-j1-2026111104').goals).toBeUndefined();
-    expect(requested).not.toContain('https://www.jleague.jp/match/j1/2026/111104/');
+      return html;
+    });
+    expect(added).toBe(1);
+    expect(events[0].goals).toHaveLength(4);
+    expect(requested).toEqual(['https://www.jleague.jp/match/j1/2026/100501/']);
   });
 });
 

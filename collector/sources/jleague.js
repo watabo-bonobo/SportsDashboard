@@ -62,18 +62,30 @@ export async function collect(_now, fetchText) {
       // 1クラブ分が取れなくても他のクラブと今週分は使う
     }
   }
-  const events = [...byId.values()];
-  // 鹿島の終わった試合だけ、試合ページから得点者を読む
+  return [...byId.values()];
+}
+
+/**
+ * 集めたデータ（前回分を含む）のうち、ここ60日の鹿島の終わった試合で得点者がまだ無いものだけ、
+ * 試合ページから得点者を読む。クラブ別日程に載らなくなった試合もあとから埋まる
+ */
+export async function enrich(events, now, fetchText) {
+  const since = new Date(now.getTime() - 60 * 86400000).toISOString().slice(0, 10);
+  let added = 0;
   for (const ev of events) {
-    if (!ev.result || !/鹿島/.test(`${ev.home}${ev.away}`)) continue;
+    if (!ev.result || ev.goals || ev.start < since || !/鹿島/.test(`${ev.home}${ev.away}`)) continue;
+    if (!/^https:\/\/www\.jleague\.jp\/match\//.test(ev.source ?? '')) continue;
     try {
       const goals = parseGoals(await fetchText(ev.source));
-      if (goalsMatchResult(goals, ev.result)) ev.goals = goals;
+      if (goalsMatchResult(goals, ev.result)) {
+        ev.goals = goals;
+        added++;
+      }
     } catch {
       // 得点者が取れなくても結果は出す
     }
   }
-  return events;
+  return added;
 }
 
 /**

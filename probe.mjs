@@ -3,11 +3,15 @@ const get = async (u) => { const r = await fetch(u, { headers: { 'User-Agent': U
 for (const slug of ['kirincupsoccer_2026', '20261117']) {
   const base = `https://www.jfa.jp/samuraiblue/${slug}/schedule_result/`;
   const h = await get(base);
-  for (const m of h.matchAll(/(jsonPath|json|scheduleResultAccordion)[^\n]{0,250}/gi)) console.log('L', m[0].replace(/\s+/g, ' ').slice(0, 260));
-  const urls = [...new Set([...h.matchAll(/['"]([^'"]+\.json[^'"]*)['"]/g)].map(m => m[1]))];
-  console.log('JSONURLS', urls.join(' '));
-  for (const u of urls.slice(0, 2)) {
+  const k = h.indexOf('scheduleResultAccordion');
+  console.log('INL', h.slice(k - 600, k + 900).replace(/\s+/g, ' '));
+  const p = h.indexOf('jsonPath = [');
+  console.log('JP', h.slice(p, p + 600).replace(/\s+/g, ' '));
+  const urls = [...new Set([...h.slice(k - 600, k + 900).matchAll(/['"]((?:https?:)?\/[^'"]+)['"]/g)].map(m => m[1]))];
+  for (const u of urls.filter(u => !/\.js$|\.css$/.test(u)).slice(0, 3)) {
     const t = await get(new URL(u, base).toString());
-    console.log('JSON', u, t.length, t.slice(0, 3500).replace(/\s+/g, ' '));
+    const g = t.search(/得点|goal|score/i);
+    console.log('DATA', u, t.length, t.slice(0, 1500).replace(/\s+/g, ' '));
+    console.log('DATAG', t.slice(Math.max(0, g - 300), g + 1500).replace(/\s+/g, ' '));
   }
 }

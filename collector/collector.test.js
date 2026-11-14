@@ -529,47 +529,61 @@ describe('Ｊリーグ 得点者', () => {
 });
 
 describe('JFA 得点者', () => {
-  const page = (left, right, leftName = '日本', rightName = 'ウルグアイ') => `<div id="score-board-header">
-    <div class="flag"><p><img src="a.png"></p><p>${leftName}</p></div><div class="total-score">3</div>
-    <div class="flag"><p><img src="b.png"></p><p>${rightName}</p></div></div>
-    <div id="game-content-wrap"><div class="scorerLeft">${left}</div><div class="title-scorer">得点者</div><div class="scorerRight">${right}</div></div>`;
+  const match = (date, home, away, homeScorer, awayScorer) => ({
+    matchDateJpn: date,
+    homeTeamName: home,
+    awayTeamName: away,
+    scorer: { homeScorer, awayScorer },
+  });
+  const json = (...matches) => JSON.stringify({ matchScheduleList: { matchSchedule: matches } });
 
-  it('1試合だけの企画のページから試合ページの URL を作る', () => {
-    expect(jfa.matchPageUrl('https://www.jfa.jp/samuraiblue/20260924/')).toBe('https://www.jfa.jp/samuraiblue/20260924/match_page.html');
-    expect(jfa.matchPageUrl('https://www.jfa.jp/samuraiblue/kirincupsoccer_2026/')).toBeNull();
+  it('大会ページから試合結果の JSON の URL を作る', () => {
+    expect(jfa.scheduleJsonUrl('https://www.jfa.jp/samuraiblue/kirincupsoccer_2026/')).toBe(
+      'https://www.jfa.jp/national_team/samuraiblue/kirincupsoccer_2026/match/schedule.json',
+    );
+    expect(jfa.scheduleJsonUrl('https://www.footballchannel.jp/2026/10/05/post1027173/')).toBeNull();
   });
 
-  it('日本の得点者をホーム側として読む', () => {
-    const html = page('11分 松木 玖生<br>90+1分 塩貝 健人<br>90+6分 上田 綺世<br>', '42分 マキシミリアノ・アラウホ<br>');
-    expect(jfa.parseGoals(html)).toEqual([
-      { side: 'home', player: '松木 玖生', minute: "11'" },
-      { side: 'home', player: '塩貝 健人', minute: "90+1'" },
-      { side: 'home', player: '上田 綺世', minute: "90+6'" },
-      { side: 'away', player: 'マキシミリアノ・アラウホ', minute: "42'" },
+  it('その日の日本の試合の得点者を、日本をホーム側として読む', () => {
+    const data = JSON.parse(
+      json(
+        match('2026/10/01', 'パナマ', 'ニュージーランド', ['45+1分 ジオバニー・ヘルベルト'], ['13分 マルコ・スタメニッチ']),
+        match('2026/10/05', 'ニュージーランド', '日本', ['30分 クリス・ウッド'], ['12分 上田 綺世', '90+2分 堂安 律']),
+      ),
+    );
+    expect(jfa.goalsFromSchedule(data, '2026-10-05')).toEqual([
+      { side: 'home', player: '上田 綺世', minute: "12'" },
+      { side: 'home', player: '堂安 律', minute: "90+2'" },
+      { side: 'away', player: 'クリス・ウッド', minute: "30'" },
     ]);
-    // 日本が右側に載っていても日本をホームにする
-    const swapped = page('42分 アラウホ<br>', '11分 松木 玖生<br>', 'ウルグアイ', '日本');
-    expect(jfa.parseGoals(swapped).map((g) => [g.side, g.player])).toEqual([
-      ['home', '松木 玖生'],
-      ['away', 'アラウホ'],
-    ]);
+    expect(jfa.goalsFromSchedule(data, '2026-10-01')).toBeNull();
   });
 
-  it('スコアと数が合う試合だけ得点者を付ける', async () => {
+  it('スコアと数が合う試合だけ得点者を付け、同じ大会の JSON は1回だけ読む', async () => {
     const schedule = `<table>
+      <tr><td class="date">10/1(木)</td><td class="comp_name"><a href="/samuraiblue/kirincupsoccer_2026/">キリンカップ</a></td><td class="score">〇0-0PK5-4</td><td class="team">エクアドル</td><td class="place">神奈川／横浜国際総合競技場</td></tr>
+      <tr><td class="date">10/5(月)</td><td class="comp_name"><a href="/samuraiblue/kirincupsoccer_2026/">キリンカップ</a></td><td class="score">〇2-1</td><td class="team">ニュージーランド</td><td class="place">東京／国立競技場</td></tr>
       <tr><td class="date">9/24(木)</td><td class="comp_name"><a href="/samuraiblue/20260924/">キリンチャレンジカップ</a></td><td class="score">〇3-1</td><td class="team">ウルグアイ</td><td class="place">宮城／キューアンドエースタジアムみやぎ</td></tr>
-      <tr><td class="date">9/28(月)</td><td class="comp_name"><a href="/samuraiblue/20260928/">キリンチャレンジカップ</a></td><td class="score">〇2-1</td><td class="team">ベネズエラ</td><td class="place">広島／エディオンピースウイング広島</td></tr>
     </table>`;
+    const requested = [];
     const pages = {
       'https://www.jfa.jp/samuraiblue/schedule_result/2026.html': schedule,
-      'https://www.jfa.jp/samuraiblue/20260924/match_page.html': page('11分 松木 玖生<br>90+1分 塩貝 健人<br>90+6分 上田 綺世<br>', '42分 アラウホ<br>'),
-      'https://www.jfa.jp/samuraiblue/20260928/match_page.html': page('49分 上田 綺世<br>', ''),
+      'https://www.jfa.jp/national_team/samuraiblue/kirincupsoccer_2026/match/schedule.json': json(
+        match('2026/10/01', '日本', 'エクアドル', [], []),
+        match('2026/10/05', '日本', 'ニュージーランド', ['20分 上田 綺世', '70分 堂安 律'], ['80分 クリス・ウッド']),
+      ),
+      // 数が合わない（速報で途中まで）
+      'https://www.jfa.jp/national_team/samuraiblue/20260924/match/schedule.json': json(match('2026/09/24', '日本', 'ウルグアイ', ['11分 松木 玖生'], [])),
     };
     const events = await jfa.collect(NOW, async (url) => {
+      requested.push(url);
       if (!(url in pages)) throw new Error('HTTP 404');
       return pages[url];
     });
-    expect(events[0].goals).toHaveLength(4);
-    expect(events[1].goals).toBeUndefined();
+    const byDate = (d) => events.find((e) => e.start === d);
+    expect(byDate('2026-10-01').goals).toEqual([]);
+    expect(byDate('2026-10-05').goals.map((g) => g.player)).toEqual(['上田 綺世', '堂安 律', 'クリス・ウッド']);
+    expect(byDate('2026-09-24').goals).toBeUndefined();
+    expect(requested.filter((u) => u.includes('kirincupsoccer_2026'))).toHaveLength(1);
   });
 });

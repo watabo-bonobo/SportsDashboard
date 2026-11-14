@@ -61,37 +61,36 @@ export function parse(html, url) {
   return events;
 }
 
-/** 1試合だけの企画（/samuraiblue/20260924/ など）の試合ページ。大会形式のページには無い */
-export function matchPageUrl(source) {
-  const m = source.match(/^(https:\/\/www\.jfa\.jp\/samuraiblue\/\d{8})\/$/);
-  return m ? `${m[1]}/match_page.html` : null;
-}
-
 /**
- * 試合ページの得点者（"11分 松木 玖生<br>90+1分 塩貝 健人"）を読む。
- * 左右どちらが日本かは見出しのチーム名で決め、日本をホーム側にそろえる
+ * 大会ページ（/samuraiblue/kirincupsoccer_2026/ など）ごとに、試合結果ページが読み込む JSON がある。
+ * 得点者もここに入っている
  */
-export function parseGoals(html) {
-  const $ = cheerio.load(html);
-  const names = $('#score-board-header .flag')
-    .map((_, el) => $(el).text().trim())
-    .get();
-  const japanLeft = names[0] ? names[0] === '日本' : true;
-  const read = (cls, side) =>
-    ($(`#game-content-wrap .${cls}`).html() ?? '')
-      .split(/<br\s*\/?>/i)
-      .map((s) => cheerio.load(s).text().normalize('NFKC').replace(/\s+/g, ' ').trim())
-      .filter(Boolean)
-      .map((s) => {
-        const m = s.match(/^(\d+(?:\+\d+)?)分\s*(.+)$/);
-        return m ? { side, player: m[2], minute: `${m[1]}'` } : { side, player: s, minute: '' };
-      });
-  const left = read('scorerLeft', japanLeft ? 'home' : 'away');
-  const right = read('scorerRight', japanLeft ? 'away' : 'home');
-  return [...left, ...right].sort((a, b) => (a.side === b.side ? 0 : a.side === 'home' ? -1 : 1));
+export function scheduleJsonUrl(source) {
+  const m = source?.match(/^https:\/\/www\.jfa\.jp\/samuraiblue\/([^/]+)\/$/);
+  return m ? `https://www.jfa.jp/national_team/samuraiblue/${m[1]}/match/schedule.json` : null;
 }
 
-/** 年間スケジュールを読み、ここ60日の結果の出た試合だけ試合ページから得点者を足す（数がスコアと合うときだけ） */
+/** "90+1分 塩貝 健人" → { player, minute: "90+1'" } */
+function parseScorer(text, side) {
+  const s = text.normalize('NFKC').replace(/\s+/g, ' ').trim();
+  const m = s.match(/^(\d+(?:\+\d+)?)分\s*(.+)$/);
+  return m ? { side, player: m[2], minute: `${m[1]}'` } : { side, player: s, minute: '' };
+}
+
+/** schedule.json から、その日の日本の試合の得点者を取り出す。日本をホーム側にそろえる */
+export function goalsFromSchedule(json, date) {
+  const list = json?.matchScheduleList?.matchSchedule ?? [];
+  const day = date.replace(/-/g, '/');
+  const match = list.find((m) => (m.matchDateJpn ?? m.matchDate) === day && [m.homeTeamName, m.awayTeamName].includes('日本'));
+  if (!match?.scorer) return null;
+  const japanHome = match.homeTeamName === '日本';
+  const read = (list, side) => (list ?? []).filter(Boolean).map((t) => parseScorer(t, side));
+  const home = read(japanHome ? match.scorer.homeScorer : match.scorer.awayScorer, 'home');
+  const away = read(japanHome ? match.scorer.awayScorer : match.scorer.homeScorer, 'away');
+  return [...home, ...away];
+}
+
+/** 年間スケジュールを読み、ここ60日の結果の出た試合だけ得点者を足す（数がスコアと合うときだけ） */
 export async function collect(now, fetchText) {
   const events = [];
   const errors = [];
@@ -104,14 +103,19 @@ export async function collect(now, fetchText) {
   }
   if (!events.length && errors.length) throw new Error(errors.join(' / '));
   const since = new Date(now.getTime() - 60 * 86400000).toISOString().slice(0, 10);
+  const schedules = new Map();
   for (const ev of events) {
-    const page = ev.result && ev.start >= since && matchPageUrl(ev.source);
-    if (!page) continue;
+    const url = ev.result && ev.start >= since && scheduleJsonUrl(ev.source);
+    if (!url) continue;
     try {
-      const goals = parseGoals(await fetchText(page));
+      // 大会形式は同じ JSON に複数試合が入っているので1回だけ読む
+      if (!schedules.has(url)) schedules.set(url, JSON.parse(await fetchText(url)));
+      const goals = goalsFromSchedule(schedules.get(url), ev.start.slice(0, 10));
+      if (!goals) continue;
       const count = (side) => goals.filter((g) => g.side === side).length;
       if (count('home') === ev.result.home && count('away') === ev.result.away) ev.goals = goals;
     } catch {
+      schedules.set(url, null);
       // 得点者が取れなくても結果は出す
     }
   }

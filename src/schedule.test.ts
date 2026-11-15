@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import type { EventData, SportEvent } from './types';
-import { buildBoard, formatChinaTime, formatDate, formatTime, googleCalendarUrl, groupGoals, jstDateKey, phaseOf } from './schedule';
+import { activeAbsences, buildBoard, formatAbsencePeriod, formatChinaTime, formatDate, formatTime, googleCalendarUrl, groupGoals, jstDateKey, phaseOf } from './schedule';
 import { validateEventData } from './validate';
 
 const ev = (over: Partial<SportEvent>): SportEvent => ({
@@ -147,5 +147,25 @@ describe('groupGoals', () => {
       { player: '柴崎 岳', minutes: ["65'"] },
     ]);
     expect(groupGoals(goals, 'home')).toEqual([{ player: '宮市 亮', minutes: ["20'"] }]);
+  });
+});
+
+describe('鹿島の不在', () => {
+  it('期間を種類ごとに書き分ける', () => {
+    expect(formatAbsencePeriod({ kind: 'national', player: 'a', detail: '日本代表', from: '2026-11-14', until: '2026-11-17' })).toBe('11/14(土)〜11/17(火)');
+    expect(formatAbsencePeriod({ kind: 'suspension', player: 'a', detail: 'J1', until: '2026-11-20' })).toBe('11/20(金)の試合まで');
+    expect(formatAbsencePeriod({ kind: 'injury', player: 'a', detail: '骨折', from: '2026-11-07' })).toBe('11/7(土)に負傷');
+  });
+
+  it('終わった代表活動・出場停止は表示しない', () => {
+    const squad = {
+      players: [],
+      absences: [
+        { kind: 'national' as const, player: 'a', detail: '日本代表', from: '2026-11-14', until: '2026-11-17' },
+        { kind: 'injury' as const, player: 'b', detail: '骨折', from: '2026-11-07' },
+      ],
+    };
+    expect(activeAbsences(squad, new Date('2026-11-17T23:00:00+09:00')).map((a) => a.player)).toEqual(['a', 'b']);
+    expect(activeAbsences(squad, new Date('2026-11-18T00:30:00+09:00')).map((a) => a.player)).toEqual(['b']);
   });
 });

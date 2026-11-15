@@ -4,6 +4,7 @@ import * as jfa from './sources/jfa-samuraiblue.js';
 import * as jleague from './sources/jleague.js';
 import * as jdata from './sources/jleague-data.js';
 import * as tt from './sources/tvtokyo-tabletennis.js';
+import * as squad from './sources/kashima-squad.js';
 
 const NOW = new Date('2026-10-07T12:00:00+09:00');
 
@@ -586,5 +587,102 @@ describe('JFA 得点者', () => {
     expect(byDate('2026-10-05').goals.map((g) => g.player)).toEqual(['上田 綺世', '堂安 律', 'クリス・ウッド']);
     expect(byDate('2026-09-24').goals).toBeUndefined();
     expect(requested.filter((u) => u.includes('kirincupsoccer_2026'))).toHaveLength(1);
+  });
+});
+
+describe('鹿島のメンバーと不在', () => {
+  it('クラブの選手一覧から背番号・ポジション・名前・選手ページを読む', () => {
+    const row = (pos, href, name) => `<tr class="rt-TableRow o-table__row"><th class="o-table__cell--player"><div class="o-table__player"><div class="o-table__player-content"><div class="o-table__player-info"><p class="a-typography">${pos}</p><p class="a-typography"><a class="o-table__player-name-link" href="${href}">${name}</a></p></div></div></div></th><td><p>14</p></td></tr>`;
+    const html = `<table><tbody>${row('GK 1', '/player/1632225/', '早川 友基')}${row('FW 40', '/player/1400757/', '鈴木 優磨')}${row('FW 40', '/player/1400757/', '鈴木 優磨')}</tbody></table>`;
+    expect(squad.parseSquad(html)).toEqual([
+      { id: '1632225', number: 1, position: 'GK', name: '早川 友基', url: 'https://www.jleague.jp/player/1632225/' },
+      { id: '1400757', number: 40, position: 'FW', name: '鈴木 優磨', url: 'https://www.jleague.jp/player/1400757/' },
+    ]);
+  });
+
+  it('選手ページから J1 の出場・得点・アシストと、J1 の警告・退場、最後に出た日を読む', () => {
+    const score = (n, label) => `<div class="p-player-details__score-item"><p class="p-player-details__score-text">${n}</p><p class="p-player-details__score-label">${label}</p></div>`;
+    const tr = (...cells) => `<tr class="rt-TableRow p-player-profile__history-row">${cells.map((c) => `<td><p>${c}</p></td>`).join('')}</tr>`;
+    const html = `<div class="p-player-details__score-list">${score(14, '出場数')}${score(1, 'ゴール')}${score(5, 'アシスト')}</div>
+      <table><tbody>
+        ${tr('26/11/11', 'ルヴァンカップ', '横浜FM', '勝 3-2', '先発', '1', '1', '65<!-- -->分', '1/0')}
+        ${tr('26/11/7', '明治安田Ｊ１', 'FC東京', '負 0-2', 'サブ', '0', '0', '45<!-- -->分', '1/0')}
+        ${tr('26/10/31', '明治安田Ｊ１', 'Ｃ大阪', '勝 4-1', '先発', '0', '0', '90<!-- -->分', '2/1')}
+      </tbody></table>`;
+    expect(squad.parsePlayer(html)).toEqual({ apps: 14, goals: 1, assists: 5, yellow: 3, red: 1, lastPlayed: '2026-11-11' });
+  });
+
+  it('お知らせ一覧と記事（JSON-LD）を読む', () => {
+    const list = `<a class="news-article-card" href="/blogs/news/26111216vj03"><div class="news-article-card__text"><h4 class="news-article-card__title"> 樋口 雄太選手 負傷のお知らせ </h4><div class="news-article-card__meta"><p class="news-article-card__date"> 2026.11.12 </p></div></div></a>`;
+    expect(squad.parseNewsList(list)).toEqual([
+      { url: 'https://www.antlers.co.jp/blogs/news/26111216vj03', title: '樋口 雄太選手 負傷のお知らせ', date: '2026-11-12' },
+    ]);
+    const article = `<script type="application/ld+json">{"@type":"Article","headline":"樋口 雄太選手 負傷のお知らせ","articleBody":"\\n樋口 雄太選手が11月7日（土）２０２６／２７明治安田Ｊ１リーグ 第14節 FC東京戦で負傷しましたので、お知らせいたします。\\n診断名\\n右腓骨骨折\\n※治療期間は非公表となります。\\n","datePublished":"2026-11-12T10:21:27+09:00"}</script>`;
+    const a = squad.parseArticle(article);
+    expect(a.title).toBe('樋口 雄太選手 負傷のお知らせ');
+    expect(squad.parseNotice({ ...a, announced: '2026-11-12', url: 'u' })).toEqual([
+      { kind: 'injury', player: '樋口 雄太', detail: '右腓骨骨折・治療期間は非公表', from: '2026-11-07', announced: '2026-11-12', source: 'u' },
+    ]);
+  });
+
+  it('代表選出のお知らせから選手と活動期間を読む', () => {
+    const u19 = squad.parseNotice({
+      title: '徳田 誉選手、吉田 湊海選手 U-19日本代表選出のお知らせ',
+      body: '本日（11/6）、アメリカ遠征（11/9～18＠アメリカ/アトランタ）のU-19日本代表メンバーが発表されました。',
+      announced: '2026-11-06',
+      url: 'u',
+    });
+    expect(u19.map((i) => [i.player, i.detail, i.from, i.until])).toEqual([
+      ['徳田 誉', 'U-19日本代表', '2026-11-09', '2026-11-18'],
+      ['吉田 湊海', 'U-19日本代表', '2026-11-09', '2026-11-18'],
+    ]);
+    const a = squad.parseNotice({
+      title: '早川 友基選手 日本代表選出のお知らせ',
+      body: '本日（11/4）、国際親善試合（11/14 vs ブラジル代表、11/17 vs パラグアイ代表＠シンガポールナショナルスタジアム）に臨む日本代表メンバーが発表されました。',
+      announced: '2026-11-04',
+      url: 'u',
+    });
+    expect(a.map((i) => [i.player, i.detail, i.from, i.until])).toEqual([['早川 友基', '日本代表', '2026-11-14', '2026-11-17']]);
+    // 12月の発表で1月の活動を書いている場合は翌年にする
+    const jan = squad.parseNotice({ title: '鈴木 優磨選手 日本代表選出のお知らせ', body: '（1/5～1/20＠サウジアラビア）', announced: '2026-12-20', url: 'u' });
+    expect([jan[0].from, jan[0].until]).toEqual(['2027-01-05', '2027-01-20']);
+  });
+
+  it('出場停止のお知らせから鹿島の選手だけを読む', () => {
+    const td = (t) => `<td class="o-table__data-cell">${t}<!-- --></td>`;
+    const html = `<p class="m-article-module__date">2026/11/13 (金) 10:00</p><table><thead><tr><th><p>選手</p></th><th><p>チーム</p></th><th><p>前回の停止</p></th><th><p>今回の停止 </p></th><th><p>出場停止試合</p></th></tr></thead><tbody>
+      <tr>${td('鈴木 優磨')}${td('鹿島')}${td(' ')}${td('J1(f)')}${td('２０２６／２７明治安田Ｊ１リーグ第１５節第１日(11/20)')}</tr>
+      <tr>${td('ダニ ゴメス')}${td('FC東京')}${td(' ')}${td('J1(a)')}${td('２０２６／２７明治安田Ｊ１リーグ第１５節第２日(11/21)')}</tr>
+    </tbody></table>`;
+    expect(squad.parseSuspensions(html, 'u')).toEqual([
+      { kind: 'suspension', player: '鈴木 優磨', detail: 'J1 第15節第1日・警告の累積', until: '2026-11-20', announced: '2026-11-13', source: 'u' },
+    ]);
+    const list = `<a href="/news/article/35343/?navicode=j1"><p>出場停止選手のお知らせ（2026/11/12）</p></a><a href="/news/article/35341/?navicode=j1">MF樋口の負傷を発表【鹿島】</a>`;
+    expect(squad.findSuspensionArticles(list)).toEqual(['https://www.jleague.jp/news/article/35343/']);
+  });
+
+  it('終わった不在・負傷後に出場した選手・いない選手を外す', () => {
+    const players = [
+      { id: '1', name: '早川 友基', lastPlayed: '2026-11-07' },
+      { id: '2', name: '樋口 雄太', lastPlayed: '2026-11-07' },
+      { id: '3', name: '安西 幸輝' },
+      { id: '4', name: '鈴木 優磨', lastPlayed: '2026-11-11' },
+    ];
+    const items = [
+      { kind: 'injury', player: '樋口 雄太', from: '2026-07-18', announced: '2026-07-21' }, // その後に出場 → 外す
+      { kind: 'injury', player: '樋口 雄太', from: '2026-11-07', announced: '2026-11-12' },
+      { kind: 'injury', player: '安西幸輝', from: '2026-07-18', announced: '2026-07-21' },
+      { kind: 'national', player: '早川 友基', from: '2026-10-05', until: '2026-10-14', announced: '2026-10-01' }, // 終わった
+      { kind: 'national', player: '早川 友基', from: '2026-11-14', until: '2026-11-17', announced: '2026-11-04' },
+      { kind: 'suspension', player: '鈴木 優磨', until: '2026-11-20', announced: '2026-11-13' },
+      { kind: 'injury', player: '移籍した選手', from: '2026-11-01', announced: '2026-11-02' },
+    ];
+    const got = squad.currentAbsences(items, players, '2026-11-15');
+    expect(got.map((a) => [a.kind, a.player, a.playerId])).toEqual([
+      ['suspension', '鈴木 優磨', '4'],
+      ['injury', '安西 幸輝', '3'],
+      ['injury', '樋口 雄太', '2'],
+      ['national', '早川 友基', '1'],
+    ]);
   });
 });

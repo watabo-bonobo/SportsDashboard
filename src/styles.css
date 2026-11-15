@@ -38,6 +38,12 @@
   /* 勝・敗バッジなど、塗りの上の文字 */
   --on-strong: #ffffff;
 
+  /* 不在の種類（出場停止・負傷・代表） */
+  --suspension: #c20000;
+  --injury: #a63b00;
+  --national: #0031d8;
+  --card-yellow: #8a6a00;
+
   --radius: 8px;
   color-scheme: light;
 }
@@ -74,6 +80,11 @@
     --win: #6fd3a0;
     --loss: #ff8a8a;
     --on-strong: #111214;
+
+    --suspension: #ff8a8a;
+    --injury: #ffae7a;
+    --national: #8fb0ff;
+    --card-yellow: #f5cb5c;
     color-scheme: dark;
   }
 }
@@ -808,6 +819,117 @@ h1 {
   color: var(--text-sub);
 }
 
+/* ---- 鹿島のメンバーと不在 ---- */
+.absence-badge {
+  /* 文字をバッジの枠の上下左右の中央に置く */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  padding: 1px 6px;
+  border: 1.5px solid currentColor;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.absence-suspension {
+  color: var(--suspension);
+}
+.absence-injury {
+  color: var(--injury);
+}
+.absence-national {
+  color: var(--national);
+}
+.absence-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 13px;
+}
+.absence-list li {
+  display: grid;
+  grid-template-columns: 5.2em minmax(0, 1fr);
+  /* バッジは行の上下中央に置く */
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+/* 種類のバッジは同じ幅にそろえ、文字を中央に置く */
+.absence-list .absence-badge {
+  width: 100%;
+}
+.absence-who {
+  font-weight: 700;
+}
+.absence-pos {
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-sub);
+}
+.absence-when {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 8px;
+  font-size: 12px;
+  color: var(--text-sub);
+}
+.absence-when a {
+  color: var(--text-sub);
+}
+.absences-card {
+  gap: 6px;
+}
+.squad .team-col {
+  white-space: normal;
+}
+.squad th,
+.squad td {
+  padding: 4px 3px;
+}
+.squad thead th {
+  line-height: 1.2;
+}
+.squad thead abbr {
+  text-decoration: none;
+}
+.squad .team-col .absence-badge {
+  margin-left: 4px;
+  padding: 0 3px;
+  font-size: 10px;
+}
+.squad-name {
+  color: inherit;
+  text-decoration: none;
+}
+.squad-name:hover {
+  text-decoration: underline;
+}
+.squad .squad-group th {
+  padding-top: 8px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-sub);
+  border-bottom-color: var(--line-strong);
+}
+.squad .zero {
+  color: var(--text-sub);
+}
+.squad .card-yellow {
+  color: var(--card-yellow);
+  font-weight: 700;
+}
+.squad .card-red {
+  color: var(--suspension);
+  font-weight: 700;
+}
+
 /* ---- 応援クラブの調子 ---- */
 .team-form {
   gap: 6px;
@@ -1247,5 +1369,18 @@ h1 {
 @media (max-width: 640px) and (prefers-color-scheme: dark) {
   .views button[aria-pressed='true'] {
     color: #111214;
+  }
+}
+@media (max-width: 640px) {
+  .absence-list {
+    font-size: 12px;
+  }
+  .absence-list li {
+    grid-template-columns: 5.2em minmax(0, 1fr);
+    gap: 6px;
+    padding: 4px 0;
+  }
+  .absence-when {
+    font-size: 11px;
   }
 }

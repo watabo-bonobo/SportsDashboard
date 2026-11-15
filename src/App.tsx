@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { EventData, Sport } from './types';
 import {
+  activeAbsences,
   buildBoard,
   buildSummary,
   formatClock,
@@ -13,7 +14,7 @@ import {
   SPORT_LABEL,
 } from './schedule';
 import { validateEventData } from './validate';
-import { EventRow, FeaturedCard, ResultRow, StandingsTable, SummaryBar, TeamFormCard } from './components';
+import { AbsenceCard, AbsenceList, EventRow, FeaturedCard, ResultRow, SquadTable, StandingsTable, SummaryBar, TeamFormCard } from './components';
 
 // 絞り込みボタンの並び（鹿島はサッカーの中のチーム絞り込み）
 const FILTER_ORDER: SportFilter[] = ['all', 'baseball', 'soccer', 'kashima', 'handball', 'basketball', 'volleyball', 'tabletennis'];
@@ -58,7 +59,7 @@ export default function App() {
   const [prefs, setPrefs] = useState<Prefs>(loadPrefs);
   const [now, setNow] = useState(currentTime);
 
-  const [rightTab, setRightTab] = useState<'results' | 'standings'>('results');
+  const [rightTab, setRightTab] = useState<'results' | 'standings' | 'squad'>('results');
   // スマホでは1画面に収めるため、3つのパネルを切り替えて1つずつ表示する
   const [mobileView, setMobileView] = useState<'next' | 'upcoming' | 'results'>('upcoming');
   const [loading, setLoading] = useState(false);
@@ -134,6 +135,11 @@ export default function App() {
     prefs.sport === 'kashima'
       ? data?.standings?.find((t) => t.id === 'jleague-j1')?.rows.find((r) => KASHIMA.is(r.team))
       : undefined;
+  // 鹿島で絞り込んだときは、メンバー表と出られない選手も出す
+  const squad = prefs.sport === 'kashima' ? data?.kashima : undefined;
+  const absences = useMemo(() => activeAbsences(squad, now), [squad, now]);
+  // 鹿島以外に切り替えたらメンバーのタブは無いので結果に戻す
+  const tab = rightTab === 'squad' && !squad ? 'results' : rightTab;
   const summary = useMemo(() => (visible ? buildSummary(visible, now, side) : null), [visible, now, side]);
 
   const today = jstDateKey(now);
@@ -236,6 +242,7 @@ export default function App() {
                 {board.nextFeatured.map((e) => (
                   <FeaturedCard key={e.id} event={e} now={now} />
                 ))}
+                {squad && <AbsenceCard absences={absences} players={squad.players} label={KASHIMA.label} />}
                 {kashimaRow && <TeamFormCard row={kashimaRow} label={KASHIMA.label} />}
               </div>
             </section>
@@ -277,30 +284,55 @@ export default function App() {
                   type="button"
                   role="tab"
                   id="tab-results"
-                  aria-selected={rightTab === 'results'}
+                  aria-selected={tab === 'results'}
                   aria-controls="tabpanel-right"
                   onClick={() => setRightTab('results')}
                 >
-                  最近の結果<span className="count">{board.results.length}件</span>
+                  {squad ? '結果' : '最近の結果'}
+                  <span className="count">{board.results.length}件</span>
                 </button>
                 <button
                   type="button"
                   role="tab"
                   id="tab-standings"
-                  aria-selected={rightTab === 'standings'}
+                  aria-selected={tab === 'standings'}
                   aria-controls="tabpanel-right"
                   onClick={() => setRightTab('standings')}
                 >
-                  順位表<span className="count">{standings.length}表</span>
+                  {squad ? '順位' : '順位表'}
+                  <span className="count">{standings.length}表</span>
                 </button>
+                {squad && (
+                  <button
+                    type="button"
+                    role="tab"
+                    id="tab-squad"
+                    aria-selected={tab === 'squad'}
+                    aria-controls="tabpanel-right"
+                    onClick={() => setRightTab('squad')}
+                  >
+                    メンバー<span className="count">{squad.players.length}人</span>
+                  </button>
+                )}
               </div>
               <div
                 className="panel-body"
                 id="tabpanel-right"
                 role="tabpanel"
-                aria-labelledby={rightTab === 'results' ? 'tab-results' : 'tab-standings'}
+                aria-labelledby={`tab-${tab}`}
               >
-                {rightTab === 'results' ? (
+                {tab === 'squad' && squad ? (
+                  <>
+                    <section className="standings" aria-label="出られない選手">
+                      <h3 className="standings-title">
+                        <span>出られない選手</span>
+                        <span className="count">代表・負傷・出場停止</span>
+                      </h3>
+                      <AbsenceList absences={absences} players={squad.players} />
+                    </section>
+                    <SquadTable squad={squad} absences={absences} />
+                  </>
+                ) : tab === 'results' ? (
                   <>
                     <p className="panel-note">直近30日</p>
                     {board.results.length === 0 && <p className="empty">直近30日の結果はありません</p>}
@@ -324,7 +356,7 @@ export default function App() {
 
       <footer className="footer">
         <p>
-          情報元：JFA、Ｊリーグ公式、NPB、MLB、日本バレーボール協会、リーグＨ、テレ東卓球NEWS ほか報道・公式発表。1時間ごとに自動で集めています。
+          情報元：JFA、Ｊリーグ公式、鹿島アントラーズ公式、NPB、MLB、日本バレーボール協会、リーグＨ、テレ東卓球NEWS ほか報道・公式発表。1時間ごとに自動で集めています。
         </p>
         <p>放送・配信予定は変更されることがあります。最新の情報は各公式サイトでご確認ください。</p>
       </footer>

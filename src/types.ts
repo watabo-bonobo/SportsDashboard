@@ -98,9 +98,57 @@ export interface Standings {
   source?: string;
 }
 
+/** 鹿島の選手。成績は今季 J1（出場・得点・アシスト・警告・退場） */
+export interface SquadPlayer {
+  id: string;
+  number?: number;
+  position: 'GK' | 'DF' | 'MF' | 'FW';
+  name: string;
+  /** Ｊリーグ公式の選手ページ */
+  url: string;
+  apps: number;
+  goals: number;
+  assists: number;
+  yellow: number;
+  red: number;
+  /** 最後に出場した日（全大会）"YYYY-MM-DD" */
+  lastPlayed?: string;
+  statsAt?: string;
+}
+
+/** national: 代表招集 / injury: 負傷 / suspension: 出場停止 */
+export type AbsenceKind = 'national' | 'injury' | 'suspension';
+
+export interface Absence {
+  kind: AbsenceKind;
+  player: string;
+  playerId?: string;
+  /** 代表チーム名、診断名と治療期間、停止になる試合など */
+  detail: string;
+  /** 始まり（負傷した日、代表活動の初日）"YYYY-MM-DD" */
+  from?: string;
+  /** 終わり（代表活動の最終日、停止になる最後の試合の日）"YYYY-MM-DD" */
+  until?: string;
+  /** 発表日 "YYYY-MM-DD" */
+  announced?: string;
+  source?: string;
+}
+
+export interface Squad {
+  updatedAt?: string;
+  players: SquadPlayer[];
+  /** いま出られない選手（終わったものは収集時に外してある） */
+  absences: Absence[];
+  source?: string;
+  /** 収集用（読み終えたお知らせ） */
+  checked?: string[];
+}
+
 export interface EventData {
   updatedAt: string;
   events: SportEvent[];
   /** 順位表（自動収集。なければ表示しない） */
   standings?: Standings[];
+  /** 鹿島のメンバーと不在（自動収集。なければ表示しない） */
+  kashima?: Squad;
 }

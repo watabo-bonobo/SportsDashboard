@@ -592,6 +592,31 @@ h1 {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
+.scorers {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  margin: 2px 0 4px;
+  font-size: 12px;
+  color: var(--text-sub);
+}
+.scorers ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.scorers-home {
+  text-align: right;
+}
+.scorers .minutes {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.scorers-mark {
+  font-size: 11px;
+  line-height: 18px;
+}
 .result-foot {
   display: flex;
   flex-wrap: wrap;
@@ -1170,6 +1195,10 @@ h1 {
   .score {
     gap: 8px;
     margin: 2px 0 0;
+  }
+  .scorers {
+    gap: 8px;
+    font-size: 11px;
   }
   .team {
     font-size: 13px;

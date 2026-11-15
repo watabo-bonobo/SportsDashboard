@@ -18,6 +18,13 @@ export interface Result {
   note?: string;
 }
 
+/** 得点（サッカー）。minute は "45+6'" のような表記のまま */
+export interface Goal {
+  side: 'home' | 'away';
+  player: string;
+  minute: string;
+}
+
 export interface SportEvent {
   id: string;
   sport: Sport;
@@ -42,6 +49,8 @@ export interface SportEvent {
   note?: string;
   broadcasts?: Broadcast[];
   result?: Result;
+  /** 得点者（鹿島と日本代表の試合だけ） */
+  goals?: Goal[];
   /** 日本代表の試合など、強調表示したいもの */
   featured?: boolean;
   /** 情報の出典 URL */

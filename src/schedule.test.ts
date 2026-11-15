@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import type { EventData, SportEvent } from './types';
-import { buildBoard, formatChinaTime, formatDate, formatTime, googleCalendarUrl, jstDateKey, phaseOf } from './schedule';
+import { buildBoard, formatChinaTime, formatDate, formatTime, googleCalendarUrl, groupGoals, jstDateKey, phaseOf } from './schedule';
 import { validateEventData } from './validate';
 
 const ev = (over: Partial<SportEvent>): SportEvent => ({
@@ -131,5 +131,21 @@ describe('鹿島の絞り込み', () => {
     expect(isKashimaEvent(ev({ sport: 'basketball', home: '鹿島X', away: 'Y' }))).toBe(false);
     expect(sideOutcome(win, KASHIMA)).toBe('win');
     expect(sideOutcome(win)).toBeNull();
+  });
+});
+
+describe('groupGoals', () => {
+  it('同じ選手の得点を1行にまとめる', () => {
+    const goals = [
+      { side: 'away' as const, player: '鈴木 優磨', minute: "45+6'" },
+      { side: 'home' as const, player: '宮市 亮', minute: "20'" },
+      { side: 'away' as const, player: '柴崎 岳', minute: "65'" },
+      { side: 'away' as const, player: '鈴木 優磨', minute: "82'" },
+    ];
+    expect(groupGoals(goals, 'away')).toEqual([
+      { player: '鈴木 優磨', minutes: ["45+6'", "82'"] },
+      { player: '柴崎 岳', minutes: ["65'"] },
+    ]);
+    expect(groupGoals(goals, 'home')).toEqual([{ player: '宮市 亮', minutes: ["20'"] }]);
   });
 });

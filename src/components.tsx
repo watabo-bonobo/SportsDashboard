@@ -1,7 +1,8 @@
-import type { Broadcast, FormResult, Sport, SportEvent, StandingRow, Standings } from './types';
+import type { Broadcast, FormResult, Goal, Sport, SportEvent, StandingRow, Standings } from './types';
 import type { Side } from './schedule';
 import {
   eventTitle,
+  groupGoals,
   formatDate,
   formatPeriod,
   formatChinaTime,
@@ -134,6 +135,25 @@ export function EventRow({ event }: { event: SportEvent }) {
   );
 }
 
+function Scorers({ goals }: { goals: Goal[] }) {
+  const column = (side: Goal['side']) => (
+    <ul className={`scorers-${side}`}>
+      {groupGoals(goals, side).map((r) => (
+        <li key={r.player}>
+          {r.player} <span className="minutes">{r.minutes.join(' ')}</span>
+        </li>
+      ))}
+    </ul>
+  );
+  return (
+    <div className="scorers" aria-label="得点者">
+      {column('home')}
+      <span className="scorers-mark">得点</span>
+      {column('away')}
+    </div>
+  );
+}
+
 export function ResultRow({ event, now, side = JAPAN }: { event: SportEvent; now: Date; side?: Side }) {
   const r = event.result;
   const outcome = sideOutcome(event, side);
@@ -159,6 +179,7 @@ export function ResultRow({ event, now, side = JAPAN }: { event: SportEvent; now
       ) : (
         <h4 className="match">{eventTitle(event)}</h4>
       )}
+      {event.goals && event.goals.length > 0 && <Scorers goals={event.goals} />}
       {event.note && <p className="note">{event.note}</p>}
       <div className="result-foot">
         {outcome && <span className={`outcome outcome-${outcome}`}>{side.label} {OUTCOME_LABEL[outcome]}</span>}

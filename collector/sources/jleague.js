@@ -65,6 +65,56 @@ export async function collect(_now, fetchText) {
   return [...byId.values()];
 }
 
+/**
+ * 集めたデータ（前回分を含む）のうち、ここ60日の鹿島の終わった試合で得点者がまだ無いものだけ、
+ * 試合ページから得点者を読む。クラブ別日程に載らなくなった試合もあとから埋まる
+ */
+export async function enrich(events, now, fetchText) {
+  const since = new Date(now.getTime() - 60 * 86400000).toISOString().slice(0, 10);
+  let added = 0;
+  for (const ev of events) {
+    if (!ev.result || ev.goals || ev.start < since || !/鹿島/.test(`${ev.home}${ev.away}`)) continue;
+    if (!/^https:\/\/www\.jleague\.jp\/match\//.test(ev.source ?? '')) continue;
+    try {
+      const goals = parseGoals(await fetchText(ev.source));
+      if (goalsMatchResult(goals, ev.result)) {
+        ev.goals = goals;
+        added++;
+      }
+    } catch {
+      // 得点者が取れなくても結果は出す
+    }
+  }
+  return added;
+}
+
+/**
+ * 試合ページの見出しにある得点者一覧を読む。
+ * 4列の並び（ホームの選手・ホームの時間・アウェーの時間・アウェーの選手）で、空いた側は空の div になる
+ */
+export function parseGoals(html) {
+  const $ = resolveStreamedHtml(cheerio.load(html));
+  const cells = $('.o-page-header__player-score-list')
+    .first()
+    .children()
+    .map((_, el) => $(el).text().normalize('NFKC').replace(/\s+/g, ' ').trim())
+    .get();
+  if (cells.length % 4 !== 0) return [];
+  const goals = [];
+  for (let i = 0; i < cells.length; i += 4) {
+    const [homePlayer, homeMinute, awayMinute, awayPlayer] = cells.slice(i, i + 4);
+    if (homePlayer) goals.push({ side: 'home', player: homePlayer, minute: homeMinute });
+    if (awayPlayer) goals.push({ side: 'away', player: awayPlayer, minute: awayMinute });
+  }
+  return goals;
+}
+
+/** 読み取った得点の数がスコアと合うときだけ使う（並びを読み違えたときに誤った得点者を出さない） */
+export function goalsMatchResult(goals, result) {
+  const count = (side) => goals.filter((g) => g.side === side).length;
+  return count('home') === result.home && count('away') === result.away;
+}
+
 /** href のカテゴリ → 大会名。ここに無いカテゴリ（J2/J3 など）は取り込まない */
 export const COMPETITIONS = {
   j1: '明治安田J1リーグ',

@@ -509,9 +509,8 @@ export function SquadTable({ squad, absences }: { squad: Squad; absences: Absenc
             <th scope="col">出場</th>
             <th scope="col">得点</th>
             <th scope="col">
-              アシ
-              <br />
-              スト
+              {/* ほかの列（出場・得点・警告・退場）と同じ漢字2文字にそろえる。意味はポインタを当てると出る */}
+              <abbr title="アシスト">助攻</abbr>
             </th>
             <th scope="col">警告</th>
             <th scope="col">退場</th>

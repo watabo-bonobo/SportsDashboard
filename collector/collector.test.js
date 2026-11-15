@@ -686,3 +686,73 @@ describe('鹿島のメンバーと不在', () => {
     ]);
   });
 });
+
+describe('野球日本代表（NPB）', () => {
+  const index = `<div class="contents"><section>
+    <h6><a href="/apbc/2026/">【ラグザス アジアプロ野球チャンピオンシップ2026】</a></h6>
+    <dl><dt><a href="/japan/2026fal/" class="link_black">侍ジャパン練習試合</a></dt>
+    <dd>2026年11月7日（土）、8日（日）　侍ジャパン  vs. 千葉ロッテ、広島東洋 （宮崎）</dd></dl>
+    <dl><dt><a href="/japan/2026spr/" class="link_black">ラグザス 侍ジャパンシリーズ2026</a></dt>
+    <dd><a href="/bis/scores/japan/linescore2026a.html">2026年2月22日（日）、23日（月） 侍ジャパン vs. 福岡ソフトバンク （宮崎）</a><br>
+    <a href="/bis/scores/japan/linescore2026b.html">2026年2月27日（金）、28日（土） 侍ジャパン vs. 中日 （バンテリンドーム ナゴヤ）</a></dd></dl>
+    <dl><dt><a href="/japan/2025fal/" class="link_black">ラグザス 侍ジャパンシリーズ2025</a></dt><dd>2025年11月15日（土）</dd></dl>
+  </section></div>`;
+
+  it('一覧から今年以降の大会ページを拾う', async () => {
+    const s = await import('./sources/npb-japan.js');
+    const pages = s.parseIndex(index, new Date('2026-11-15T05:00:00Z'));
+    expect(pages.map((p) => [p.url, p.kind])).toEqual([
+      ['https://npb.jp/apbc/2026/', 'tournament'],
+      ['https://npb.jp/japan/2026fal/', 'series'],
+      ['https://npb.jp/japan/2026spr/', 'series'],
+    ]);
+    expect([...s.opponentsByDate(pages[2].note)]).toEqual([
+      ['2026-02-22', '福岡ソフトバンク'],
+      ['2026-02-23', '福岡ソフトバンク'],
+      ['2026-02-27', '中日'],
+      ['2026-02-28', '中日'],
+    ]);
+  });
+
+  it('大会の日程・結果表から全試合を取り込み、最終日を決勝・3位決定戦にする', async () => {
+    const s = await import('./sources/npb-japan.js');
+    const row = (d, t, card, href) =>
+      `<tr><td>${d}</td><td>東京ドーム</td><td>${t}</td><td>${card}</td><td>${href ? `<a href="${href}">試合結果</a>` : ''}</td><td></td></tr>`;
+    const html = `<title>ラグザス アジアプロ野球チャンピオンシップ2026 | NPB.jp 日本野球機構</title>
+      <div class="line_table"><table><tbody>
+      ${row('11月12日（木）', '19:00', 'チャイニーズ・タイペイ代表 0 - 5 日本代表', 'https://npb.jp/scores/2026/1112/tpe-jpn-80/')}
+      ${row('11月13日（金）', '12:00', 'オーストラリア代表 4 - 6 チャイニーズ・タイペイ代表', 'https://npb.jp/scores/2026/1113/aus-tpe-80/')}
+      ${row('11月15日（日）', '11:00', 'チャイニーズ・タイペイ代表 vs. オーストラリア代表')}
+      ${row('11月15日（日）', '19:00', '日本代表 vs. 韓国代表')}
+      </tbody></table></div>`;
+    const events = s.parseTournament(html, 'https://npb.jp/apbc/2026/');
+    expect(events.map((e) => [e.id, e.home, e.away, e.start, e.round, e.result, !!e.featured])).toEqual([
+      ['jpnbb-20261112-1900', 'C.タイペイ', '日本', '2026-11-12T19:00:00+09:00', undefined, { home: 0, away: 5 }, true],
+      ['jpnbb-20261113-1200', 'オーストラリア', 'C.タイペイ', '2026-11-13T12:00:00+09:00', undefined, { home: 4, away: 6 }, false],
+      ['jpnbb-20261115-1100', 'C.タイペイ', 'オーストラリア', '2026-11-15T11:00:00+09:00', '3位決定戦', undefined, false],
+      ['jpnbb-20261115-1900', '日本', '韓国', '2026-11-15T19:00:00+09:00', '決勝', undefined, true],
+    ]);
+    expect(events[0].competition).toBe('ラグザス アジアプロ野球チャンピオンシップ2026');
+    expect(events[0].source).toBe('https://npb.jp/scores/2026/1112/tpe-jpn-80/');
+  });
+
+  it('侍ジャパンシリーズの日程表と結果を読み、日本をホームにそろえる', async () => {
+    const s = await import('./sources/npb-japan.js');
+    const html = `<title>ラグザス 侍ジャパンシリーズ2026 | NPB.jp</title>
+      <table class="schedule_table">
+        <tr><th>【第1戦】</th><td>2026年2月22日（日）</td><td>ひなたサンマリンスタジアム宮崎（開始 13:00）</td><td>テレビ朝日系列</td></tr>
+        <tr><th>【第2戦】</th><td>2026年2月23日（月）</td><td>ひなたサンマリンスタジアム宮崎（開始 14:00）</td><td>TBS系列</td></tr>
+        <tr><th>【第3戦】</th><td>2026年2月27日（金）</td><td>バンテリンドーム ナゴヤ<!--（開始 00:00）--></td></tr>
+      </table>
+      <div id="game_section"><a href="/scores/2026/0223/h-samurai-02/"><table class="sp_table"><tr><th>第2戦</th><td class="r1">2月23日（月）</td>
+        <td class="r2"><div class="t2">●侍ジャパン</div><div class="score">0 - 4</div><div class="b2_1">福岡ソフトバンク○</div></td></tr></table></a></div>`;
+    const note = '2026年2月22日（日）、23日（月） 侍ジャパン vs. 福岡ソフトバンク （宮崎） 2026年2月27日（金）、28日（土） 侍ジャパン vs. 中日 （バンテリンドーム ナゴヤ）';
+    const events = s.parseSeries(html, 'https://npb.jp/japan/2026spr/', note);
+    expect(events.map((e) => [e.id, e.round, e.home, e.away, e.start, e.venue, e.result, e.broadcasts?.[0]?.name])).toEqual([
+      ['jpnbb-20260222-1300', '第1戦', '日本', '福岡ソフトバンク', '2026-02-22T13:00:00+09:00', 'ひなたサンマリンスタジアム宮崎', undefined, 'テレビ朝日系列'],
+      ['jpnbb-20260223-1400', '第2戦', '日本', '福岡ソフトバンク', '2026-02-23T14:00:00+09:00', 'ひなたサンマリンスタジアム宮崎', { home: 0, away: 4 }, 'TBS系列'],
+      ['jpnbb-20260227-g3', '第3戦', '日本', '中日', '2026-02-27', 'バンテリンドーム ナゴヤ', undefined, undefined],
+    ]);
+    expect(events[1].source).toBe('https://npb.jp/scores/2026/0223/h-samurai-02/');
+  });
+});

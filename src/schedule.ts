@@ -1,4 +1,4 @@
-import type { Goal, Sport, SportEvent } from './types';
+import type { Absence, AbsenceKind, Goal, Sport, SportEvent, Squad } from './types';
 
 const JST_OFFSET_MS = 9 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -296,4 +296,21 @@ export function groupGoals(goals: Goal[], side: Goal['side']): { player: string;
     else out.push({ player: g.player, minutes: [g.minute] });
   }
   return out;
+}
+
+/** 不在の種類の表示名 */
+export const ABSENCE_LABEL: Record<AbsenceKind, string> = { suspension: '出場停止', injury: '負傷', national: '代表' };
+
+/** まだ終わっていない不在だけ（収集から時間がたって終わったものを外す） */
+export function activeAbsences(squad: Squad | undefined, now: Date): Absence[] {
+  const today = jstDateKey(now);
+  return (squad?.absences ?? []).filter((a) => !a.until || a.until >= today);
+}
+
+/** 不在の期間の書き方: 代表「11/14(土)〜11/17(火)」、出場停止「11/20(金)の試合」、負傷「10/24(土)に負傷」 */
+export function formatAbsencePeriod(a: Absence): string {
+  if (a.kind === 'suspension') return a.until ? `${formatDate(a.until)}の試合まで` : '';
+  if (a.kind === 'injury') return a.from ? `${formatDate(a.from)}に負傷` : '';
+  if (a.from && a.until) return a.from === a.until ? formatDate(a.from) : `${formatDate(a.from)}〜${formatDate(a.until)}`;
+  return a.until ? `${formatDate(a.until)}まで` : '';
 }

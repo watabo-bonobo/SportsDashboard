@@ -4,6 +4,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { mergeEvents, pruneOld } from './merge.js';
 import { SOURCES } from './sources/index.js';
+import { collectSquad } from './sources/kashima-squad.js';
 
 const UA = 'Mozilla/5.0 (compatible; SportsDashboard/1.0; +https://github.com/watabo-bonobo/SportsDashboard)';
 
@@ -17,7 +18,7 @@ async function loadBase(where) {
   try {
     const text = /^https?:/.test(where) ? await fetchText(`${where}?t=${Date.now()}`) : await readFile(where, 'utf8');
     const data = JSON.parse(text);
-    if (Array.isArray(data.events)) return { events: data.events, standings: data.standings ?? [] };
+    if (Array.isArray(data.events)) return { events: data.events, standings: data.standings ?? [], kashima: data.kashima };
   } catch (e) {
     console.warn(`前回データを読めませんでした (${where}): ${e.message}`);
   }
@@ -93,8 +94,12 @@ async function main() {
       console.log(`✗ ${src.name}（得点者）: ${e.message}`);
     }
   }
+  // 鹿島のメンバーと不在（取れなければ前回分のまま）
+  const { squad, report: squadReport } = await collectSquad(now, fetchText, base.kashima);
+  console.log(squadReport.join('\n'));
   const jst = new Date(now.getTime() + 9 * 3600000).toISOString().replace('T', ' ').slice(0, 16);
   const out = { updatedAt: jst, events, standings: st.standings };
+  if (squad) out.kashima = { ...squad, updatedAt: jst };
   await writeFile(outPath, JSON.stringify(out, null, 2) + '\n');
   console.log(`${events.length}件を書き出しました: ${outPath}`);
 }

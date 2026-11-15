@@ -1,7 +1,10 @@
-import type { Broadcast, FormResult, Goal, Sport, SportEvent, StandingRow, Standings } from './types';
+import { Fragment } from 'react';
+import type { Absence, Broadcast, FormResult, Goal, Sport, SportEvent, Squad, StandingRow, Standings } from './types';
 import type { Side } from './schedule';
 import {
+  ABSENCE_LABEL,
   eventTitle,
+  formatAbsencePeriod,
   groupGoals,
   formatDate,
   formatPeriod,
@@ -417,5 +420,140 @@ export function RankChart({ ranks, teams }: { ranks: (number | null)[]; teams: n
         )}
       </svg>
     </figure>
+  );
+}
+
+/** 不在の種類のバッジ。色だけに頼らず文字を入れる */
+function AbsenceBadge({ kind }: { kind: Absence['kind'] }) {
+  return <span className={`absence-badge absence-${kind}`}>{ABSENCE_LABEL[kind]}</span>;
+}
+
+/** 出られない選手の一覧（代表招集・負傷・出場停止） */
+export function AbsenceList({ absences, players }: { absences: Absence[]; players?: Squad['players'] }) {
+  if (!absences.length) return <p className="empty">発表されている不在はありません</p>;
+  const byId = new Map((players ?? []).map((p) => [p.id, p]));
+  return (
+    <ul className="absence-list">
+      {absences.map((a) => {
+        const p = a.playerId ? byId.get(a.playerId) : undefined;
+        return (
+          <li key={`${a.kind}-${a.player}-${a.source ?? ''}`}>
+            <AbsenceBadge kind={a.kind} />
+            <div className="absence-body">
+              <p className="absence-who">
+                {a.player}
+                {p && (
+                  <span className="absence-pos">
+                    {p.position}
+                    {p.number !== undefined && ` ${p.number}`}
+                  </span>
+                )}
+              </p>
+              <p className="absence-detail">{a.detail}</p>
+              <p className="absence-when">
+                {formatAbsencePeriod(a)}
+                {a.source && (
+                  <a href={a.source} target="_blank" rel="noreferrer">
+                    発表
+                  </a>
+                )}
+              </p>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/** 「次の試合と調子」に出す、出られない選手のカード */
+export function AbsenceCard({ absences, players, label }: { absences: Absence[]; players: Squad['players']; label: string }) {
+  return (
+    <article className="card absences-card sport-soccer">
+      <p className="meta">
+        <SportTag sport="soccer" />
+        <span>{label}の不在（代表・負傷・出場停止）</span>
+      </p>
+      <AbsenceList absences={absences} players={players} />
+    </article>
+  );
+}
+
+const POSITION_LABEL = { GK: 'GK（ゴールキーパー）', DF: 'DF（ディフェンダー）', MF: 'MF（ミッドフィルダー）', FW: 'FW（フォワード）' } as const;
+
+/** 鹿島のメンバー表（今季 J1 の出場・得点・アシスト・警告・退場） */
+export function SquadTable({ squad, absences }: { squad: Squad; absences: Absence[] }) {
+  const absentKinds = new Map<string, Absence['kind'][]>();
+  for (const a of absences) {
+    if (!a.playerId) continue;
+    absentKinds.set(a.playerId, [...(absentKinds.get(a.playerId) ?? []), a.kind]);
+  }
+  return (
+    <section className="standings squad" aria-label="鹿島アントラーズのメンバー">
+      <h3 className="standings-title">
+        <SportTag sport="soccer" />
+        <span>メンバーと今季J1の成績</span>
+        {squad.source && (
+          <a className="push-right" href={squad.source} target="_blank" rel="noreferrer">
+            出典
+          </a>
+        )}
+      </h3>
+      <table>
+        <thead>
+          <tr>
+            <th scope="col">番号</th>
+            <th scope="col" className="team-col">
+              選手
+            </th>
+            <th scope="col">出場</th>
+            <th scope="col">得点</th>
+            <th scope="col">
+              アシ
+              <br />
+              スト
+            </th>
+            <th scope="col">警告</th>
+            <th scope="col">退場</th>
+          </tr>
+        </thead>
+        <tbody>
+          {squad.players.map((p, i) => {
+            const kinds = absentKinds.get(p.id) ?? [];
+            const newPos = i === 0 || squad.players[i - 1].position !== p.position;
+            return (
+              <Fragment key={p.id}>
+                {newPos && (
+                  <tr className="squad-group">
+                    <th scope="rowgroup" colSpan={7}>
+                      {POSITION_LABEL[p.position]}
+                    </th>
+                  </tr>
+                )}
+                <tr>
+                  <td>{p.number ?? '―'}</td>
+                  <th scope="row" className="team-col">
+                    <a href={p.url} target="_blank" rel="noreferrer" className="squad-name">
+                      {p.name}
+                    </a>
+                    {kinds.map((k) => (
+                      <AbsenceBadge key={k} kind={k} />
+                    ))}
+                  </th>
+                  <td>{p.apps}</td>
+                  <td className={p.goals ? 'pts-col' : 'zero'}>{p.goals}</td>
+                  <td className={p.assists ? 'pts-col' : 'zero'}>{p.assists}</td>
+                  <td className={p.yellow ? 'card-yellow' : 'zero'}>{p.yellow}</td>
+                  <td className={p.red ? 'card-red' : 'zero'}>{p.red}</td>
+                </tr>
+              </Fragment>
+            );
+          })}
+        </tbody>
+      </table>
+      <p className="standings-note">
+        成績は今季の明治安田Ｊ１リーグ。Ｊリーグ公式の選手ページから集め、試合の翌日〜2日後に反映されます。負傷は鹿島公式の発表をもとに、その後に試合に出ると外れます。
+      </p>
+    </section>
   );
 }

@@ -821,7 +821,10 @@ h1 {
 
 /* ---- 鹿島のメンバーと不在 ---- */
 .absence-badge {
-  display: inline-block;
+  /* 文字をバッジの枠の上下左右の中央に置く */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex: none;
   padding: 1px 6px;
   border: 1.5px solid currentColor;
@@ -830,6 +833,7 @@ h1 {
   font-weight: 700;
   line-height: 1.4;
   white-space: nowrap;
+  vertical-align: middle;
 }
 .absence-suspension {
   color: var(--suspension);
@@ -849,14 +853,15 @@ h1 {
 .absence-list li {
   display: grid;
   grid-template-columns: 5.2em minmax(0, 1fr);
-  align-items: start;
+  /* バッジは行の上下中央に置く */
+  align-items: center;
   gap: 8px;
   padding: 6px 0;
   border-bottom: 1px solid var(--line);
 }
+/* 種類のバッジは同じ幅にそろえ、文字を中央に置く */
 .absence-list .absence-badge {
-  justify-self: start;
-  margin-top: 1px;
+  width: 100%;
 }
 .absence-who {
   font-weight: 700;
@@ -889,7 +894,6 @@ h1 {
 }
 .squad thead th {
   line-height: 1.2;
-  vertical-align: bottom;
 }
 .squad .team-col .absence-badge {
   margin-left: 4px;

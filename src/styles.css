@@ -671,7 +671,8 @@ h1 {
 }
 .tabs button {
   display: inline-flex;
-  align-items: baseline;
+  /* 文字をタブの枠の上下中央に置く（baseline だと上に寄る） */
+  align-items: center;
   gap: 8px;
   min-height: 44px;
   padding: 0 12px;
@@ -725,7 +726,9 @@ h1 {
 .standings th,
 .standings td {
   padding: 4px 4px;
-  text-align: right;
+  /* 数字と見出しは列の中央にそろえる */
+  text-align: center;
+  vertical-align: middle;
   border-bottom: 1px solid var(--line);
   white-space: nowrap;
 }
@@ -768,8 +771,7 @@ h1 {
   vertical-align: middle;
 }
 .standings .form-col {
-  text-align: left;
-  padding-left: 6px;
+  padding-left: 4px;
 }
 /* 直近5試合を付けた表は列が増えるので、チーム名を折り返さず詰める */
 .standings table:has(.form-col) th,
